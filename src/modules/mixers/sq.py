@@ -199,7 +199,8 @@ class ShapleyQMixer(nn.Module):
         mask_subcoalition_map = 1 - subcoalition_map
 
         f_est_subcoalition = f_est * subcoalition_map
-        f_est_subcoalition = subcoalition_map + mask_subcoalition_map
+        # TODO: check
+        f_est_subcoalition = f_est_subcoalition + mask_subcoalition_map
         f_est_subcoalition = f_est_subcoalition.contiguous().view(batch_size, self.sample_size, self.n_agents, -1) # shape = (b, n_s, n, n)
         f_est_individual = f_est * individual_map
         f_est_individual = f_est_individual.contiguous().view(batch_size, self.sample_size, self.n_agents, -1) # shape = (b, n_s, n, n)
