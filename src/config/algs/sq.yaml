@@ -1,0 +1,38 @@
+# --- QMIX specific parameters ---
+
+# use epsilon greedy action selector
+action_selector: "epsilon_greedy"
+epsilon_start: 1.0
+epsilon_finish: 0.05
+epsilon_anneal_time: 50000
+
+runner: "episode"
+
+buffer_size: 5000
+
+# update the target network every {} episodes
+target_update_interval: 200
+
+# use the Q_Learner to train
+agent_output_type: "q"
+learner: "sq_learner"
+double_q: True
+mixer: "sq_mixer"
+mixing_embed_dim: 64
+double_q: True
+arch: "partial_action_observation"
+td_loss_coef: 1.0
+proj_coef: 1.0
+w_reg_coef: 0.1
+# qtran_arch: "qtran_paper"
+n_step: 1
+double_q: True
+# grad_norm_clip: 5.0
+sample_size: 1
+
+# opt_loss: 1
+# nopt_min_loss: 0.1
+
+network_size: "small"
+
+name: "sq"
