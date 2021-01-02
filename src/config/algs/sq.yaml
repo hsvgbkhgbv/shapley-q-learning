@@ -12,24 +12,26 @@ buffer_size: 5000
 
 # update the target network every {} episodes
 target_update_interval: 200
+mixer_update_interval: 2
 
 # use the Q_Learner to train
 agent_output_type: "q"
 learner: "sq_learner"
-double_q: True
+# double_q: True
 mixer: "sq_mixer"
 mixing_embed_dim: 64
 double_q: True
-arch: "partial_action_observation"
-td_loss_coef: 1.0
-proj_coef: 1.0
-w_reg_coef: 0.1
+arch: "observation_action"
+# td_loss_coef: 1.0
+# proj_coef: 1.0
+# w_reg_coef: 0.1
 # qtran_arch: "qtran_paper"
 n_step: 1
-double_q: True
+# double_q: True
 # grad_norm_clip: 5.0
-sample_size: 1
-
+sample_size: 5
+w_shared_params: True
+mixer_lr: 0.0005
 # opt_loss: 1
 # nopt_min_loss: 0.1
 

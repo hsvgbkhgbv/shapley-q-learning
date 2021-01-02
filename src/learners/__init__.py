@@ -7,7 +7,7 @@ from .max_q_learner_sac import SACQLearner
 from .q_learner_w import QLearner as WeightedQLearner
 from .qatten_learner import QattenLearner
 from .dmaq_qatten_learner import DMAQ_qattenLearner
-from .sq_learner import SQLearner
+from .sq_learner_new import SQLearner
 
 REGISTRY = {}
 
