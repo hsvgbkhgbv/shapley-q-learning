@@ -3,6 +3,9 @@
 ### Python ###
 # Byte-compiled / optimized / DLL files
 __pycache__/
+*/__pycache__/
+*/*/*/__pycache__/
+*/*/__pycache__/
 *.py[cod]
 
 # C extensions
@@ -108,4 +111,3 @@ profiler/
 venv/
 3rdparty
 *.txt
-*.pyc
