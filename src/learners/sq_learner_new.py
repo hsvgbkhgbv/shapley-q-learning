@@ -80,7 +80,7 @@ class SQLearner:
 
         # Mix
         if self.mixer is not None:
-            chosen_action_qvals = self.mixer(batch["state"][:, :-1], one_hot_actions, chosen_action_qvals, max_filter, target=False)
+            chosen_action_qvals, w_est = self.mixer(batch["state"][:, :-1], one_hot_actions, chosen_action_qvals, max_filter, target=False)
             target_max_qvals = self.mixer(batch["state"][:, :-1], one_hot_actions, target_max_qvals, max_filter, target=True)
             # target_max_qvals = self.target_mixer(target_max_qvals, batch["state"][:, 1:])
 
@@ -110,18 +110,28 @@ class SQLearner:
         # Normal L2 loss, take mean over actual data
         loss = (masked_td_error ** 2).sum() / mask.sum()
 
+        # w_est L2 loss
+        w_est_error = (w_est - max_filter) * max_filter
+        mask = mask.expand_as(w_est_error)
+        masked_w_est_error = w_est_error * mask
+
+        loss_w = (masked_w_est_error ** 2).sum() / mask.sum()
+
         # Optimise
         self.optimiser.zero_grad()
         self.optimiser_mixer.zero_grad()
         loss.backward()
+        loss_w.backward()
         grad_norm = th.nn.utils.clip_grad_norm_(self.params, self.args.grad_norm_clip)
         grad_norm_mixer = th.nn.utils.clip_grad_norm_(self.params_mixer, self.args.grad_norm_clip)
         
-        if (episode_num - self.last_mixer_update_episode) / self.args.mixer_update_interval >= 1.0:
-            self.optimiser_mixer.step()
-            self.last_mixer_update_episode = episode_num
-        else:
-            self.optimiser.step()
+        self.optimiser_mixer.step()
+        self.optimiser.step()
+        # if (episode_num - self.last_mixer_update_episode) / self.args.mixer_update_interval >= 1.0:
+            
+        #     self.last_mixer_update_episode = episode_num
+        # else:
+            
 
         if (episode_num - self.last_target_update_episode) / self.args.target_update_interval >= 1.0:
             self._update_targets()
