@@ -59,7 +59,7 @@ class ShapleyQMixer(nn.Module):
                                      nn.Linear(self.embed_dim, self.embed_dim),
                                      nn.ReLU(),
                                      nn.Linear(self.embed_dim, 1),
-                                    #  nn.Tanh()
+                                     nn.Tanh()
                             )
         elif self.args.network_size == "big":
             # w_list = [ nn.Sequential(nn.Linear(w_input_size, self.embed_dim),
@@ -213,4 +213,4 @@ class ShapleyQMixer(nn.Module):
 
             # if the agent with the max-action then w=1
             # otherwise the agent will use the learned w
-            return ( (w_estimates * non_max_filter + max_filter) * agent_qs).mean(dim=2, keepdim=True), w_estimates
+            return ( (w_estimates * non_max_filter + max_filter) * agent_qs).sum(dim=2, keepdim=True), w_estimates

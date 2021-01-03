@@ -125,11 +125,16 @@ class SQLearner:
         grad_norm = th.nn.utils.clip_grad_norm_(self.params, self.args.grad_norm_clip)
         grad_norm_mixer = th.nn.utils.clip_grad_norm_(self.params_mixer, self.args.grad_norm_clip)
         
-        if (episode_num - self.last_mixer_update_episode) / self.args.mixer_update_interval >= 1.0:
-            self.optimiser_mixer.step()
-            self.last_mixer_update_episode = episode_num
-        else:
+        if not self.args.mixer_update_interval:
             self.optimiser.step()
+            self.optimiser_mixer.step()
+        else:
+            if (episode_num - self.last_mixer_update_episode) / self.args.mixer_update_interval >= 1.0:
+                self.last_mixer_update_episode = episode_num
+                self.optimiser_mixer.step()
+            else:
+                self.optimiser.step()
+            
 
         if (episode_num - self.last_target_update_episode) / self.args.target_update_interval >= 1.0:
             self._update_targets()
@@ -146,6 +151,7 @@ class SQLearner:
             self.logger.log_stat("target_mean", (targets * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
             agent_utils = (th.gather(mac_out[:, :-1], dim=3, index=actions).squeeze(3) * mask).sum().item() / (mask_elems * self.args.n_agents)
             self.logger.log_stat("agent_utils", agent_utils, t_env)
+            self.logger.log_stat("w_est", (w_est * (1 - max_filter) * mask.expand_as(w_est)).sum().item() / mask.expand_as(w_est).sum().item(), t_env)
             self.log_stats_t = t_env
 
     def _update_targets(self):
