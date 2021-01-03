@@ -12,7 +12,7 @@ buffer_size: 5000
 
 # update the target network every {} episodes
 target_update_interval: 200
-mixer_update_interval: 100
+mixer_update_interval: 2
 
 # use the Q_Learner to train
 agent_output_type: "q"
