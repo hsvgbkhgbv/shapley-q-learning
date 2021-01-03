@@ -108,3 +108,4 @@ profiler/
 venv/
 3rdparty
 *.txt
+*.pyc
