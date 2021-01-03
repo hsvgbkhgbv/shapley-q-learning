@@ -24,7 +24,7 @@ arch: "observation_action"
 n_step: 1
 sample_size: 1
 w_shared_params: True
-mixer_lr: 0.001
+mixer_lr: 0.005
 
 network_size: "small"
 
