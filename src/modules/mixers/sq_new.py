@@ -213,4 +213,4 @@ class ShapleyQMixer(nn.Module):
 
             # if the agent with the max-action then w=1
             # otherwise the agent will use the learned w
-            return ( (w_estimates.detach() * non_max_filter + max_filter) * agent_qs).mean(dim=2, keepdim=True), w_estimates
+            return ( (w_estimates * non_max_filter + max_filter) * agent_qs).mean(dim=2, keepdim=True), w_estimates

@@ -111,27 +111,25 @@ class SQLearner:
         loss = (masked_td_error ** 2).sum() / mask.sum()
 
         # w_est L2 loss
-        w_est_error = (w_est - max_filter) * max_filter
-        mask = mask.expand_as(w_est_error)
-        masked_w_est_error = w_est_error * mask
+        # w_est_error = (w_est - max_filter) * max_filter
+        # mask = mask.expand_as(w_est_error)
+        # masked_w_est_error = w_est_error * mask
 
-        loss_w = (masked_w_est_error ** 2).sum() / mask.sum()
+        # loss_w = (masked_w_est_error ** 2).sum() / mask.sum()
 
         # Optimise
         self.optimiser.zero_grad()
         self.optimiser_mixer.zero_grad()
         loss.backward()
-        loss_w.backward()
+        # loss_w.backward()
         grad_norm = th.nn.utils.clip_grad_norm_(self.params, self.args.grad_norm_clip)
         grad_norm_mixer = th.nn.utils.clip_grad_norm_(self.params_mixer, self.args.grad_norm_clip)
         
-        self.optimiser_mixer.step()
-        self.optimiser.step()
-        # if (episode_num - self.last_mixer_update_episode) / self.args.mixer_update_interval >= 1.0:
-            
-        #     self.last_mixer_update_episode = episode_num
-        # else:
-            
+        if (episode_num - self.last_mixer_update_episode) / self.args.mixer_update_interval >= 1.0:
+            self.optimiser_mixer.step()
+            self.last_mixer_update_episode = episode_num
+        else:
+            self.optimiser.step()
 
         if (episode_num - self.last_target_update_episode) / self.args.target_update_interval >= 1.0:
             self._update_targets()
@@ -139,6 +137,7 @@ class SQLearner:
 
         if t_env - self.log_stats_t >= self.args.learner_log_interval:
             self.logger.log_stat("loss", loss.item(), t_env)
+            self.logger.log_stat("loss_w", loss_w.item(), t_env)
             self.logger.log_stat("grad_norm", grad_norm, t_env)
             self.logger.log_stat("grad_norm_mixer", grad_norm_mixer, t_env)
             mask_elems = mask.sum().item()
