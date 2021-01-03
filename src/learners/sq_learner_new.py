@@ -137,7 +137,7 @@ class SQLearner:
 
         if t_env - self.log_stats_t >= self.args.learner_log_interval:
             self.logger.log_stat("loss", loss.item(), t_env)
-            self.logger.log_stat("loss_w", loss_w.item(), t_env)
+            # self.logger.log_stat("loss_w", loss_w.item(), t_env)
             self.logger.log_stat("grad_norm", grad_norm, t_env)
             self.logger.log_stat("grad_norm_mixer", grad_norm_mixer, t_env)
             mask_elems = mask.sum().item()
