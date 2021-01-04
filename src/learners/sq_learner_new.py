@@ -1,6 +1,5 @@
 import copy
 from components.episode_buffer import EpisodeBatch
-from modules.mixers.sq_new import ShapleyQMixer
 import torch as th
 from torch.optim import RMSprop
 
@@ -8,6 +7,10 @@ from torch.optim import RMSprop
 class SQLearner:
     def __init__(self, mac, scheme, logger, args):
         self.args = args
+        if args.name == "sq":
+            from modules.mixers.sq_new import ShapleyQMixer
+        elif args.name == "sq_enc":
+            from modules.mixers.sq_new_enc import ShapleyQMixer
         self.mac = mac
         self.logger = logger
 
