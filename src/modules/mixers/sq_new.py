@@ -59,7 +59,8 @@ class ShapleyQMixer(nn.Module):
                                      nn.Linear(self.embed_dim, self.embed_dim),
                                      nn.ReLU(),
                                      nn.Linear(self.embed_dim, 1),
-                                     nn.Tanh()
+                                    #  nn.Tanh()
+                                    nn.Sigmoid()
                             )
         elif self.args.network_size == "big":
             # w_list = [ nn.Sequential(nn.Linear(w_input_size, self.embed_dim),

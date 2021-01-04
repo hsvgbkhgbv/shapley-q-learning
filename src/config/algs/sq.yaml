@@ -22,10 +22,10 @@ mixing_embed_dim: 64
 double_q: True
 arch: "observation_action"
 n_step: 1
-sample_size: 5
+sample_size: 10
 w_shared_params: True
 mixer_lr: 0.005
-w_constraint_coef: 0.001
+w_constraint_coef: 0.01
 
 network_size: "small"
 

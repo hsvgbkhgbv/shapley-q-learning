@@ -52,8 +52,11 @@ class SQLearner:
         chosen_action_qvals = th.gather(mac_out[:, :-1], dim=3, index=actions).squeeze(3)  # Remove the last dim
         
         # generate a filter for selecting the agents with the max-action
-        cur_max_actions = mac_out.clone().detach()[:, 1:].max(dim=3, keepdim=True)[1].squeeze(3)
-        max_filter = (chosen_action_qvals==cur_max_actions).float()
+        _mac_out_detach = mac_out.clone().detach()
+        _mac_out_detach[avail_actions == 0] = -9999999
+        _cur_max_actions = _mac_out_detach[:, :-1].max(dim=3, keepdim=True)[1].squeeze(3)
+        # print (f"This is the size of actions: {actions.size()}")
+        max_filter = (actions.detach().squeeze(3)==_cur_max_actions).float()
 
         # Calculate the Q-Values necessary for the target
         target_mac_out = []
@@ -81,7 +84,7 @@ class SQLearner:
         # Mix
         if self.mixer is not None:
             chosen_action_qvals, w_est = self.mixer(batch["state"][:, :-1], one_hot_actions, chosen_action_qvals, max_filter, target=False)
-            target_max_qvals = self.mixer(batch["state"][:, :-1], one_hot_actions, target_max_qvals, max_filter, target=True)
+            target_max_qvals = self.mixer(batch["state"][:, 1:], one_hot_actions, target_max_qvals, max_filter, target=True)
             # target_max_qvals = self.target_mixer(target_max_qvals, batch["state"][:, 1:])
 
         N = getattr(self.args, "n_step", 1)
@@ -112,18 +115,21 @@ class SQLearner:
 
         if self.args.w_constraint_coef:
             # w_est L2 loss
-            w_est_error = (w_est - max_filter) * max_filter
+            w_est_error = (w_est*max_filter - max_filter)
             mask = mask.expand_as(w_est_error)
             masked_w_est_error = w_est_error * mask
 
+            # print (f"This is the size of max_filter: {max_filter.size()}")
+            # print (f"This is the sum of max_filter: {max_filter.sum()}")
             loss_w = self.args.w_constraint_coef * (masked_w_est_error ** 2).sum() / mask.sum()
+            loss += loss_w
 
         # Optimise
         self.optimiser.zero_grad()
         self.optimiser_mixer.zero_grad()
         loss.backward()
-        if self.args.w_constraint_coef:
-            loss_w.backward()
+        # if self.args.w_constraint_coef:
+        #     loss_w.backward()
         grad_norm = th.nn.utils.clip_grad_norm_(self.params, self.args.grad_norm_clip)
         grad_norm_mixer = th.nn.utils.clip_grad_norm_(self.params_mixer, self.args.grad_norm_clip)
         
@@ -154,7 +160,7 @@ class SQLearner:
             self.logger.log_stat("target_mean", (targets * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
             agent_utils = (th.gather(mac_out[:, :-1], dim=3, index=actions).squeeze(3) * mask).sum().item() / (mask_elems * self.args.n_agents)
             self.logger.log_stat("agent_utils", agent_utils, t_env)
-            self.logger.log_stat("w_est", (w_est * (1 - max_filter) * mask.expand_as(w_est)).sum().item() / mask.expand_as(w_est).sum().item(), t_env)
+            self.logger.log_stat("w_est", ( w_est * (1 - max_filter) * mask.expand_as(w_est) ).sum().item() / ( ( (1 - max_filter) * mask.expand_as(w_est) ).sum().item() ), t_env)
             self.log_stats_t = t_env
 
     def _update_targets(self):
