@@ -82,7 +82,7 @@ class ShapleyQMixer(nn.Module):
                                      nn.Linear(self.embed_dim, self.embed_dim),
                                      nn.ReLU(),
                                      nn.Linear(self.embed_dim, 1),
-                                     nn.Tanh()
+                                     nn.Sigmoid()
             )
         else:
             raise Exception("{} is not a valid ShapleyQ network size".format(self.args.network_size))
