@@ -18,19 +18,19 @@ mixer_update_interval: False
 agent_output_type: "q"
 learner: "sq_learner"
 mixer: "sq_mixer"
-mixing_embed_dim: 64
+mixing_embed_dim: 256
 double_q: True
 arch: "observation_action"
 n_step: 1
 # give the sample size for coalition sampling
-sample_size: 1
+sample_size: 5
 w_shared_params: True
 # lr for updating w
 mixer_lr: 0.005
 # False to deactivate / give a coef for multiplier
-w_constraint_coef: False
+w_constraint_coef: 0.01
 
 network_size: "small"
 
 # sq for vanilla action and state / sq_enc for encoding action and state
-name: "sq_enc"
+name: "sq"

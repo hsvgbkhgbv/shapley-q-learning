@@ -57,7 +57,7 @@ class ShapleyQMixer(nn.Module):
             self.individual_actions_enc = nn.Sequential(
                 nn.Linear(self.n_actions, self.embed_dim),
                 nn.ReLU(),
-                nn.Linear(self.n_actions, self.embed_dim),
+                nn.Linear(self.embed_dim, self.embed_dim),
                 nn.ReLU(),
                 nn.Linear(self.embed_dim, self.embed_dim)
             )
@@ -65,7 +65,7 @@ class ShapleyQMixer(nn.Module):
             self.states_enc = nn.Sequential(
                 nn.Linear(self.state_dim, self.embed_dim),
                 nn.ReLU(),
-                nn.Linear(self.n_actions, self.embed_dim),
+                nn.Linear(self.embed_dim, self.embed_dim),
                 nn.ReLU(),
                 nn.Linear(self.embed_dim, self.embed_dim)
             )
