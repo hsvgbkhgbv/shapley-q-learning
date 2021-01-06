@@ -153,7 +153,7 @@ class ShapleyQMixer(nn.Module):
         # Compute final output
         y = th.bmm(hidden, w_final) + v
         # Reshape and return
-        w_estimates = y.view(batch_size, self.n_agents) # shape = (b, n)
+        w_estimates = th.abs(y).view(batch_size, self.n_agents) # shape = (b, n)
         # w_estimates = self.w(inputs) # shape = (b*n, 1)
         # w_estimates = w_estimates.squeeze(-1).contiguous().view(batch_size, self.n_agents) # shape = (b, n)
 
