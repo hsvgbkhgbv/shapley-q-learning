@@ -177,8 +177,8 @@ class SQLearner:
             self.logger.log_stat("target_mean", (targets * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
             agent_utils = (th.gather(mac_out[:, :-1], dim=3, index=actions).squeeze(3) * mask).sum().item() / (mask_elems * self.args.n_agents)
             self.logger.log_stat("agent_utils", agent_utils, t_env)
-            self.logger.log_stat("w_est", ( w_est * (1 - max_filter) * mask.expand_as(w_est) ).sum().item() / ( ( (1 - max_filter) * mask.expand_as(w_est) ).sum().item() ), t_env)
-            # self.logger.log_stat("w_est", ( w_est * mask.expand_as(w_est) ).sum().item() / mask.expand_as(w_est).sum().item(), t_env)
+            # self.logger.log_stat("w_est", ( w_est * (1 - max_filter) * mask.expand_as(w_est) ).sum().item() / ( ( (1 - max_filter) * mask.expand_as(w_est) ).sum().item() ), t_env)
+            self.logger.log_stat("w_est", ( w_est * mask.expand_as(w_est) ).sum().item() / mask.expand_as(w_est).sum().item(), t_env)
             self.log_stats_t = t_env
 
     def _update_targets(self):
