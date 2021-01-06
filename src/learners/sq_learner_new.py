@@ -11,6 +11,10 @@ class SQLearner:
             from modules.mixers.sq_new import ShapleyQMixer
         elif args.name == "sq_enc":
             from modules.mixers.sq_new_enc import ShapleyQMixer
+        elif args.name == "sqmix":
+            from modules.mixers.sqmix import ShapleyQMixer
+        elif args.name == "sqmix_v2":
+            from modules.mixers.sqmix_v2 import ShapleyQMixer
         self.mac = mac
         self.logger = logger
 
@@ -119,13 +123,21 @@ class SQLearner:
         if self.args.w_constraint_coef:
             # w_est L2 loss
             w_est_error = (w_est*max_filter - max_filter)
-            mask = mask.expand_as(w_est_error)
-            masked_w_est_error = w_est_error * mask
+            mask_ = mask.expand_as(w_est_error)
+            masked_w_est_error = w_est_error * mask_
 
             # print (f"This is the size of max_filter: {max_filter.size()}")
             # print (f"This is the sum of max_filter: {max_filter.sum()}")
-            loss_w = self.args.w_constraint_coef * (masked_w_est_error ** 2).sum() / mask.sum()
-            loss += loss_w
+            loss_w_constraint = (masked_w_est_error ** 2).sum() / mask_.sum()
+            loss += self.args.w_constraint_coef * loss_w_constraint
+
+        if self.args.w_contrast_coef:
+            non_max_filter = (1 - max_filter)
+            w_contrast_error = (w_est*non_max_filter - non_max_filter)
+            mask_ = mask.expand_as(w_contrast_error)
+            masked_w_contrast_error = w_contrast_error * mask_
+            loss_w_contrast = (masked_w_contrast_error ** 2).sum() / mask_.sum()
+            loss -= self.args.w_contrast_coef * loss_w_contrast
 
         # Optimise
         self.optimiser.zero_grad()
@@ -154,7 +166,9 @@ class SQLearner:
         if t_env - self.log_stats_t >= self.args.learner_log_interval:
             self.logger.log_stat("loss", loss.item(), t_env)
             if self.args.w_constraint_coef:
-                self.logger.log_stat("loss_w", loss_w.item(), t_env)
+                self.logger.log_stat("loss_w_constraint", loss_w_constraint.item(), t_env)
+            if self.args.w_contrast_coef:
+                self.logger.log_stat("loss_w_contrast", loss_w_contrast.item(), t_env)
             self.logger.log_stat("grad_norm", grad_norm, t_env)
             self.logger.log_stat("grad_norm_mixer", grad_norm_mixer, t_env)
             mask_elems = mask.sum().item()
@@ -164,6 +178,7 @@ class SQLearner:
             agent_utils = (th.gather(mac_out[:, :-1], dim=3, index=actions).squeeze(3) * mask).sum().item() / (mask_elems * self.args.n_agents)
             self.logger.log_stat("agent_utils", agent_utils, t_env)
             self.logger.log_stat("w_est", ( w_est * (1 - max_filter) * mask.expand_as(w_est) ).sum().item() / ( ( (1 - max_filter) * mask.expand_as(w_est) ).sum().item() ), t_env)
+            # self.logger.log_stat("w_est", ( w_est * mask.expand_as(w_est) ).sum().item() / mask.expand_as(w_est).sum().item(), t_env)
             self.log_stats_t = t_env
 
     def _update_targets(self):

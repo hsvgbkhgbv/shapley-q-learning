@@ -25,69 +25,28 @@ class ShapleyQMixer(nn.Module):
         else:
             raise Exception("{} is not a valid ShapleyQ architecture".format(self.arch))
 
-        if self.args.network_size == "small":
-            # w_list = [ nn.Sequential(nn.Linear(w_input_size, self.embed_dim),
-            #                          nn.ReLU(),
-            #                          nn.Linear(self.embed_dim, 1),
-            #                          nn.ReLU(),
-            #                          nn.Linear(self.embed_dim, 1),
-            #                          nn.Tanh()
-            #                     ) 
-            #                     for _ in range(self.n_agents)
-            #                 ]
-            # self.w_list = nn.ModuleList(w_list)
-            # self.coalition_actions_enc = nn.Sequential(
-            #     nn.Linear(self.n_actions, self.embed_dim),
-            #     nn.Sigmoid(),
-            #     nn.Linear(self.embed_dim, self.embed_dim)
-            # )
+        if getattr(args, "hypernet_layers", 1) == 1:
+            self.hyper_w_1 = nn.Linear(self.state_dim, self.embed_dim * 2*self.n_actions)
+            self.hyper_w_final = nn.Linear(self.state_dim, self.embed_dim)
+        elif getattr(args, "hypernet_layers", 1) == 2:
+            hypernet_embed = self.args.hypernet_embed
+            self.hyper_w_1 = nn.Sequential(nn.Linear(self.state_dim, hypernet_embed),
+                                           nn.ReLU(),
+                                           nn.Linear(hypernet_embed, self.embed_dim * 2*self.n_actions))
+            self.hyper_w_final = nn.Sequential(nn.Linear(self.state_dim, hypernet_embed),
+                                           nn.ReLU(),
+                                           nn.Linear(hypernet_embed, self.embed_dim))
+            # State dependent bias for hidden layer
+            self.hyper_b_1 = nn.Linear(self.state_dim, self.embed_dim)
+            # V(s) instead of a bias for the last layers
+            self.V = nn.Sequential(nn.Linear(self.state_dim, self.embed_dim),
+                                nn.ReLU(),
+                                nn.Linear(self.embed_dim, 1))
 
-            # self.individual_actions_enc = nn.Sequential(
-            #     nn.Linear(self.n_actions, self.embed_dim),
-            #     nn.Sigmoid(),
-            #     nn.Linear(self.embed_dim, self.embed_dim)
-            # )
-
-            # self.states_enc = nn.Sequential(
-            #     nn.Linear(self.state_dim, self.embed_dim),
-            #     nn.Sigmoid(),
-            #     nn.Linear(self.embed_dim, self.embed_dim)
-            # )
-
-            self.w = nn.Sequential(nn.Linear(w_input_size, self.embed_dim),
-                                     nn.ReLU(),
-                                     nn.Linear(self.embed_dim, self.embed_dim),
-                                     nn.ReLU(),
-                                     nn.Linear(self.embed_dim, 1),
-                                    #  nn.Tanh()
-                                    nn.Sigmoid()
-                                    # nn.ReLU()
-                            )
-        elif self.args.network_size == "big":
-            # w_list = [ nn.Sequential(nn.Linear(w_input_size, self.embed_dim),
-            #                          nn.ReLU(),
-            #                          nn.Linear(self.embed_dim, self.embed_dim),
-            #                          nn.ReLU(),
-            #                          nn.Linear(self.embed_dim, self.embed_dim),
-            #                          nn.ReLU(),
-            #                          nn.Linear(self.embed_dim, 1),
-            #                          nn.Tanh()
-            #                     ) 
-            #                     for _ in range(self.n_agents)
-            #                 ]
-            # self.w_list = nn.ModuleList(w_list)
-            self.w = nn.Sequential(nn.Linear(w_input_size, self.embed_dim),
-                                     nn.ReLU(),
-                                     nn.Linear(self.embed_dim, self.embed_dim),
-                                     nn.ReLU(),
-                                     nn.Linear(self.embed_dim, self.embed_dim),
-                                     nn.ReLU(),
-                                     nn.Linear(self.embed_dim, 1),
-                                     nn.Sigmoid()
-                                    # nn.ReLU()
-            )
+        elif getattr(args, "hypernet_layers", 1) > 2:
+            raise Exception("Sorry >2 hypernet layers is not implemented!")
         else:
-            raise Exception("{} is not a valid ShapleyQ network size".format(self.args.network_size))
+            raise Exception("Error setting number of hypernet layers.")
 
     def sample_grandcoalitions(self, batch_size):
         """
@@ -132,23 +91,6 @@ class ShapleyQMixer(nn.Module):
                                                                                                  self.n_agents) # shape = (b, n_s, n, n)
         return subcoalition_map, individual_map, grand_coalitions
 
-    def get_coalition_actions_enc(self, actions):
-        inputs = actions.contiguous().view(-1, self.n_actions)
-        coalition_actions_enc = self.coalition_actions_enc(inputs)
-        coalition_actions_enc = coalition_actions_enc.contiguous().view(-1, self.n_agents, self.n_actions)
-        return coalition_actions_enc
-
-    def get_individual_actions_enc(self, actions):
-        inputs = actions.contiguous().view(-1, self.n_actions)
-        individual_actions_enc = self.individual_actions_enc(inputs)
-        individual_actions_enc = individual_actions_enc.contiguous().view(-1, self.n_agents, self.n_actions)
-        return individual_actions_enc
-
-    def get_states_enc(self, states):
-        inputs = states
-        states_enc = self.states_enc(inputs)
-        return states_enc
-
     def get_w_estimate(self, states, actions):
         batch_size = states.size(0)
 
@@ -185,27 +127,43 @@ class ShapleyQMixer(nn.Module):
         actions_coalition_norm_vec = actions_coalition_norm_vec.mean(dim=1) # shape = (b, n, a)
 
         # get action vector of each agent
-        actions_individual = actions / self.n_agents # shape = (b, n, a)
+        actions_individual = actions # shape = (b, n, a)
 
         reshape_actions_coalition_norm_vec = actions_coalition_norm_vec.contiguous().view(-1, self.n_actions) # shape = (b*n, a)
-        reshape_actions_individual = actions_individual.contiguous().view(-1, self.n_actions) # shape = (b*n, a)
-        reshape_states = states.unsqueeze(1).expand(batch_size, self.n_agents, self.state_dim).contiguous().view(-1, self.state_dim) / states.max()# shape = (b*n, s)
+        reshape_actions_individual = actions_individual.contiguous().view(-1, self.n_actions) # shape = (b*n, 1)
+        reshape_states = states.unsqueeze(1).expand(batch_size, self.n_agents, self.state_dim).contiguous().view(-1, self.state_dim) # shape = (b*n, s)
 
         # print (f"This is the reshape_actions_coalition_norm_vec: {reshape_actions_coalition_norm_vec.size()}")
         # print (f"This is the reshape_actions_individual: {reshape_actions_individual.size()}")
         # print (f"This is the reshape_states: {reshape_states.size()}")
 
-        inputs = th.cat([reshape_states, reshape_actions_coalition_norm_vec, reshape_actions_individual], dim=-1) # shape = (b*n, s+2*a)
+        inputs = th.cat([reshape_actions_coalition_norm_vec, reshape_actions_individual], dim=-1).unsqueeze(1) # shape = (b*n, 1, 2*a)
 
-        w_estimates = self.w(inputs) # shape = (b*n, 1)
-        w_estimates = w_estimates.squeeze(-1).contiguous().view(batch_size, self.n_agents) # shape = (b, n)
+        # First layer
+        w1 = th.abs(self.hyper_w_1(reshape_states))
+        b1 = self.hyper_b_1(reshape_states)
+        w1 = w1.view(-1, 2*self.n_actions, self.embed_dim)
+        b1 = b1.view(-1, 1, self.embed_dim)
+        hidden = F.elu(th.bmm(inputs, w1) + b1)
+        # Second layer
+        w_final = th.abs(self.hyper_w_final(reshape_states))
+        w_final = w_final.view(-1, self.embed_dim, 1)
+        # State-dependent bias
+        v = self.V(reshape_states).view(-1, 1, 1)
+        # Compute final output
+        y = th.bmm(hidden, w_final) + v
+        # Reshape and return
+        w_estimates = y.view(batch_size, self.n_agents) # shape = (b, n)
+        # w_estimates = self.w(inputs) # shape = (b*n, 1)
+        # w_estimates = w_estimates.squeeze(-1).contiguous().view(batch_size, self.n_agents) # shape = (b, n)
 
         return w_estimates
 
     def forward(self, states, actions, agent_qs, max_filter, target=True):
         # agent_qs, max_filter = (b, t, n)
-        reshape_states = states.reshape(-1, self.state_dim)
-        reshape_actions = actions.reshape(-1, self.n_agents, self.n_actions).float()
+        # actions = (b, t, a)
+        reshape_states = states.contiguous().view(-1, self.state_dim)
+        reshape_actions = actions.contiguous().view(-1, self.n_agents, self.n_actions).float()
         if target:
             return th.sum(agent_qs, dim=2, keepdim=True)
         else:

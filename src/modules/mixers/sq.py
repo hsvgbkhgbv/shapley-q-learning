@@ -44,7 +44,7 @@ class ShapleyQMixer(nn.Module):
             f_list = [ nn.Sequential(nn.Linear(f_input_size, self.embed_dim),
                                      nn.ReLU(),
                                      nn.Linear(self.embed_dim, 1),
-                                     nn.Sigmoid()
+                                    #  nn.Sigmoid()
                                 ) 
                                 for _ in range(self.n_agents)
                             ]
