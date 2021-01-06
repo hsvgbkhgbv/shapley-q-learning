@@ -32,6 +32,8 @@ mixer_lr: 0.005
 # False to deactivate / give a coef for multiplier
 w_constraint_coef: False
 w_contrast_coef: False
+# True for applying 1 for max-operator / False for applying pure w_est
+max_filter: True
 
 # network_size: "small"
 

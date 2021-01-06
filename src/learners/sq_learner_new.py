@@ -59,11 +59,14 @@ class SQLearner:
         chosen_action_qvals = th.gather(mac_out[:, :-1], dim=3, index=actions).squeeze(3)  # Remove the last dim
         
         # generate a filter for selecting the agents with the max-action
-        _mac_out_detach = mac_out.clone().detach()
-        _mac_out_detach[avail_actions == 0] = -9999999
-        _cur_max_actions = _mac_out_detach[:, :-1].max(dim=3, keepdim=True)[1].squeeze(3)
-        # print (f"This is the size of actions: {actions.size()}")
-        max_filter = (actions.detach().squeeze(3)==_cur_max_actions).float()
+        if self.args.max_filter:
+            _mac_out_detach = mac_out.clone().detach()
+            _mac_out_detach[avail_actions == 0] = -9999999
+            _cur_max_actions = _mac_out_detach[:, :-1].max(dim=3, keepdim=True)[1].squeeze(3)
+            # print (f"This is the size of actions: {actions.size()}")
+            max_filter = (actions.detach().squeeze(3)==_cur_max_actions).float()
+        else:
+            max_filter = None
 
         # Calculate the Q-Values necessary for the target
         target_mac_out = []
@@ -177,8 +180,10 @@ class SQLearner:
             self.logger.log_stat("target_mean", (targets * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
             agent_utils = (th.gather(mac_out[:, :-1], dim=3, index=actions).squeeze(3) * mask).sum().item() / (mask_elems * self.args.n_agents)
             self.logger.log_stat("agent_utils", agent_utils, t_env)
-            # self.logger.log_stat("w_est", ( w_est * (1 - max_filter) * mask.expand_as(w_est) ).sum().item() / ( ( (1 - max_filter) * mask.expand_as(w_est) ).sum().item() ), t_env)
-            self.logger.log_stat("w_est", ( w_est * mask.expand_as(w_est) ).sum().item() / mask.expand_as(w_est).sum().item(), t_env)
+            if self.args.max_filter:
+                self.logger.log_stat("w_est", ( w_est * (1 - max_filter) * mask.expand_as(w_est) ).sum().item() / ( ( (1 - max_filter) * mask.expand_as(w_est) ).sum().item() ), t_env)
+            else:
+                self.logger.log_stat("w_est", ( w_est * mask.expand_as(w_est) ).sum().item() / mask.expand_as(w_est).sum().item(), t_env)
             self.log_stats_t = t_env
 
     def _update_targets(self):
