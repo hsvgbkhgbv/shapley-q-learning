@@ -123,7 +123,12 @@ class ShapleyQMixer(nn.Module):
         agent_qs_coalition = reshape_agent_qs * subcoalition_map_no_i # shape = (b, n_s, n, n, 1)
 
         # get actions vector of its coalition members for each agent
-        agent_qs_coalition_norm_vec = agent_qs_coalition.mean(dim=-2) * subcoalition_map_no_i.sum(dim=-2) # shape = (b, n_s, n, 1)
+        # agent_qs_coalition_norm_vec = agent_qs_coalition.mean(dim=-2) * subcoalition_map_no_i.sum(dim=-2) # shape = (b, n_s, n, 1)
+        subcoalition_map_no_i_ = subcoalition_map_no_i.sum(dim=-2).clone()
+        subcoalition_map_no_i_[subcoalition_map_no_i.sum(dim=-2)==0] = 1
+        agent_qs_coalition_norm_vec = agent_qs_coalition.sum(dim=-2) / subcoalition_map_no_i_ # shape = (b, n_s, n, 1)
+
+        # normalise among the sample_size
         agent_qs_coalition_norm_vec = agent_qs_coalition_norm_vec.mean(dim=1) # shape = (b, n, 1)
 
         # get action vector of each agent
