@@ -36,17 +36,17 @@ class ShapleyQMixer(nn.Module):
             self.hyper_w_final = nn.Sequential(nn.Linear(self.state_dim, hypernet_embed),
                                            nn.ReLU(),
                                            nn.Linear(hypernet_embed, self.embed_dim))
-            # State dependent bias for hidden layer
-            self.hyper_b_1 = nn.Linear(self.state_dim, self.embed_dim)
-            # V(s) instead of a bias for the last layers
-            self.V = nn.Sequential(nn.Linear(self.state_dim, self.embed_dim),
-                                nn.ReLU(),
-                                nn.Linear(self.embed_dim, 1))
-
         elif getattr(args, "hypernet_layers", 1) > 2:
             raise Exception("Sorry >2 hypernet layers is not implemented!")
         else:
             raise Exception("Error setting number of hypernet layers.")
+
+        # State dependent bias for hidden layer
+        self.hyper_b_1 = nn.Linear(self.state_dim, self.embed_dim)
+        # V(s) instead of a bias for the last layers
+        self.V = nn.Sequential(nn.Linear(self.state_dim, self.embed_dim),
+                            nn.ReLU(),
+                            nn.Linear(self.embed_dim, 1))
 
     def sample_grandcoalitions(self, batch_size):
         """
@@ -172,12 +172,12 @@ class ShapleyQMixer(nn.Module):
             return th.sum(agent_qs, dim=2, keepdim=True)
         else:
             w_estimates = self.get_w_estimate(reshape_states, reshape_agent_qs)
+            # restrict the range of w to (1, 2)
+            w_estimates = w_estimates + 1
+            w_estimates = w_estimates.contiguous().view(states.size(0), states.size(1), self.n_agents)
             if max_filter is None:
                 return (w_estimates * agent_qs).sum(dim=2, keepdim=True), w_estimates
             else:
-                # restrict the range of w to (1, 2)
-                w_estimates = w_estimates + 1
-                w_estimates = w_estimates.contiguous().view(states.size(0), states.size(1), self.n_agents)
                 # agent with non-max action will be given 1
                 non_max_filter = 1 - max_filter
                 # if the agent with the max-action then w=1
