@@ -11,7 +11,7 @@ class SQLearner:
             from modules.mixers.sq_new import ShapleyQMixer
         elif args.name == "sq_enc":
             from modules.mixers.sq_new_enc import ShapleyQMixer
-        elif args.name == "sqmix":
+        elif args.name == "sqmix_v1":
             from modules.mixers.sqmix import ShapleyQMixer
         elif args.name == "sqmix_v2":
             from modules.mixers.sqmix_v2 import ShapleyQMixer
