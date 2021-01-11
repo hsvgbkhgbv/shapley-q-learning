@@ -202,7 +202,7 @@ class SQLearner:
 
     def _update_coalitions(self):
         self.mixer.sample_grandcoalitions()
-        self.logger.console_logger.info("Updated coalitions")
+        # self.logger.console_logger.info("Updated coalitions")
 
     def cuda(self):
         self.mac.cuda()
