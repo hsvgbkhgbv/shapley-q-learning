@@ -15,6 +15,8 @@ class SQLearner:
             from modules.mixers.sqmix import ShapleyQMixer
         elif args.name == "sqmix_v2":
             from modules.mixers.sqmix_v2 import ShapleyQMixer
+        elif args.name == "sqmix_v3":
+            from modules.mixers.sqmix_v3 import ShapleyQMixer
         self.mac = mac
         self.logger = logger
 
@@ -22,6 +24,7 @@ class SQLearner:
 
         self.last_target_update_episode = 0
         self.last_mixer_update_episode = 0
+        self.last_sample_coalition_episode = 0
 
         self.mixer = None
         if args.mixer is not None:
@@ -166,6 +169,11 @@ class SQLearner:
             self._update_targets()
             self.last_target_update_episode = episode_num
 
+        if self.args.sample_coalition_interval > 0:
+            if (episode_num - self.last_sample_coalition_episode) / self.args.sample_coalition_interval >= 1.0:
+                self._update_coalitions()
+                self.last_sample_coalition_episode = episode_num
+
         if t_env - self.log_stats_t >= self.args.learner_log_interval:
             self.logger.log_stat("loss", loss.item(), t_env)
             if self.args.w_constraint_coef:
@@ -188,9 +196,13 @@ class SQLearner:
 
     def _update_targets(self):
         self.target_mac.load_state(self.mac)
-        # if self.mixer is not None:
-        #     self.target_mixer.load_state_dict(self.mixer.state_dict())
+        # if self.args.name == "sqmix_v3":
+        #     self.mixer.sample_grandcoalitions()
         self.logger.console_logger.info("Updated target network")
+
+    def _update_coalitions(self):
+        self.mixer.sample_grandcoalitions()
+        self.logger.console_logger.info("Updated coalitions")
 
     def cuda(self):
         self.mac.cuda()
