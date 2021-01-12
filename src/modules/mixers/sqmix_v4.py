@@ -150,7 +150,6 @@ class ShapleyQMixer(nn.Module):
         agent_qs_coalition = reshape_agent_qs * subcoalition_map_no_i # shape = (b, n_s, n, n, 1)
 
         # get actions vector of its coalition members for each agent
-        # agent_qs_coalition_norm_vec = agent_qs_coalition.mean(dim=-2) * subcoalition_map_no_i.sum(dim=-2) # shape = (b, n_s, n, 1)
         subcoalition_map_no_i_ = subcoalition_map_no_i.sum(dim=-2).clone()
         subcoalition_map_no_i_[subcoalition_map_no_i.sum(dim=-2)==0] = 1
         agent_qs_coalition_norm_vec = agent_qs_coalition.sum(dim=-2) / subcoalition_map_no_i_ # shape = (b, n_s, n, 1)
@@ -163,7 +162,7 @@ class ShapleyQMixer(nn.Module):
 
         reshape_agent_qs_coalition_norm_vec = agent_qs_coalition_norm_vec.contiguous().view(-1, 1) # shape = (b*n_s*n, 1)
         reshape_agent_qs_individual = agent_qs_individual.contiguous().view(-1, 1) # shape = (b*n_s*n, 1)
-        reshape_states = states.unsqueeze(1).expand(batch_size, self.n_agents, self.state_dim).contiguous().view(-1, self.state_dim) # shape = (b*n_s*n, s)
+        reshape_states = states.unsqueeze(1).unsqueeze(2).expand(batch_size, self.sample_size, self.n_agents, self.state_dim).contiguous().view(-1, self.state_dim) # shape = (b*n_s*n, s)
 
         # print (f"This is the reshape_actions_coalition_norm_vec: {reshape_actions_coalition_norm_vec.size()}")
         # print (f"This is the reshape_actions_individual: {reshape_actions_individual.size()}")
