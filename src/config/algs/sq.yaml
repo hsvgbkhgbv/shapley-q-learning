@@ -15,8 +15,8 @@ buffer_size: 5000
 target_update_interval: 200
 mixer_update_interval: False
 arch: "observation_action"
-sample_coalition_interval: 1
-# sample_coalition_interval: 0
+# sample_coalition_interval: 1
+sample_coalition_interval: 0
 
 # use the Q_Learner to train
 agent_output_type: "q"
@@ -31,7 +31,7 @@ n_step: 1
 sample_size: 10
 # w_shared_params: True
 # lr for updating w
-mixer_lr: 0.0001
+mixer_lr: 0.0005
 # True for applying 1 for max-operator / False for applying pure w_est
 max_filter: True
 # False to deactivate / give a coef for multiplier
@@ -41,4 +41,4 @@ w_contrast_coef: False
 # network_size: "small"
 
 # sq for vanilla action and state / sq_enc for encoding action and state
-name: "sqmix_v4"
+name: "sqmix_v5"
