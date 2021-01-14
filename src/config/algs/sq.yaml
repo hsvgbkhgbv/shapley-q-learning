@@ -41,4 +41,4 @@ w_contrast_coef: False
 # network_size: "small"
 
 # sq for vanilla action and state / sq_enc for encoding action and state
-name: "sqmix_v6"
+name: "sqmix_v8"
