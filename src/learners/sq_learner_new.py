@@ -27,6 +27,8 @@ class SQLearner:
             from modules.mixers.sqmix_v7 import ShapleyQMixer
         elif args.name == "sqmix_v8":
             from modules.mixers.sqmix_v8 import ShapleyQMixer
+        elif args.name == "sqmix_v9":
+            from modules.mixers.sqmix_v9 import ShapleyQMixer
         self.mac = mac
         self.logger = logger
 
