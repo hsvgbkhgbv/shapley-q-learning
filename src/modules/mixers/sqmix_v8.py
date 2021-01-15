@@ -47,6 +47,9 @@ class ShapleyQMixer(nn.Module):
         self.V = nn.Sequential(nn.Linear(self.state_dim, self.embed_dim),
                             nn.ReLU(),
                             nn.Linear(self.embed_dim, 1))
+        # probability distribution
+        self.prob_w = nn.Linear(self.state_dim+self.n_actions, self.sample_size)
+
 
     def sample_grandcoalitions(self, batch_size):
         """
@@ -91,7 +94,7 @@ class ShapleyQMixer(nn.Module):
                                                                                                  self.n_agents) # shape = (b, n_s, n, n)
         return subcoalition_map, individual_map, grand_coalitions
 
-    def get_w_estimate(self, states, agent_qs):
+    def get_w_estimate(self, states, agent_qs, actions):
         batch_size = states.size(0)
 
         # get subcoalition map including agent i
@@ -145,13 +148,13 @@ class ShapleyQMixer(nn.Module):
         inputs = th.cat([reshape_agent_qs_coalition_norm_vec, reshape_agent_qs_individual], dim=-1).unsqueeze(1) # shape = (b*n_s*n, 1, 2*1)
 
         # First layer
-        w1 = self.hyper_w_1(reshape_states)
+        w1 = th.abs(self.hyper_w_1(reshape_states))
         b1 = self.hyper_b_1(reshape_states)
         w1 = w1.view(-1, 2, self.embed_dim)
         b1 = b1.view(-1, 1, self.embed_dim)
         hidden = F.elu(th.bmm(inputs, w1) + b1)
         # Second layer
-        w_final = self.hyper_w_final(reshape_states)
+        w_final = th.abs(self.hyper_w_final(reshape_states))
         w_final = w_final.view(-1, self.embed_dim, 1)
         # State-dependent bias
         v = self.V(reshape_states).view(-1, 1, 1)
@@ -160,18 +163,24 @@ class ShapleyQMixer(nn.Module):
         # Reshape and return
         w_estimates = th.abs(y).view(batch_size, self.sample_size, self.n_agents) # shape = (b, n_s, n)
         # normalise among the sample_size
-        w_estimates = w_estimates.mean(dim=1) # shape = (b, n)
-
-        return w_estimates
+        # w_estimates = w_estimates.mean(dim=1) # shape = (b, n)
+        states_ = states.unsqueeze(1).expand(batch_size, self.n_agents, self.state_dim).contiguous().view(-1, self.state_dim) # shape = (b*n, s)
+        inputs_ = th.cat([states_, actions], dim=-1) # shape = (b*n, s+a)
+        prob = th.softmax(self.prob_w(inputs_), dim=-1) # shape = (b*n, n_s)
+        prob = prob.contiguous().view(batch_size, self.n_agents, self.sample_size).transpose(1, 2) # shape = (b, n_s, n)
+        w_estimates_ = (prob*w_estimates).sum(1) # shape = (b, n)
+        return w_estimates_
 
     def forward(self, states, actions, agent_qs, max_filter, target=True):
         # agent_qs, max_filter = (b, t, n)
+        # actions = (b, t, n, a)
         reshape_states = states.contiguous().view(-1, self.state_dim)
         reshape_agent_qs = agent_qs.unsqueeze(-1).contiguous().view(-1, self.n_agents, 1)
+        reshape_actions = actions.contiguous().view(-1, self.n_actions).float()
         if target:
             return th.sum(agent_qs, dim=2, keepdim=True)
         else:
-            w_estimates = self.get_w_estimate(reshape_states, reshape_agent_qs)
+            w_estimates = self.get_w_estimate(reshape_states, reshape_agent_qs, reshape_actions)
             # restrict the range of w to (1, 2)
             w_estimates = w_estimates + 1
             w_estimates = w_estimates.contiguous().view(states.size(0), states.size(1), self.n_agents)
