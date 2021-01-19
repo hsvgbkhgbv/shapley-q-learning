@@ -1,7 +1,7 @@
 import copy
 from components.episode_buffer import EpisodeBatch
 import torch as th
-from torch.optim import RMSprop
+from torch.optim import RMSprop, SGD
 
 
 class SQLearner:
@@ -29,6 +29,8 @@ class SQLearner:
             from modules.mixers.sqmix_v8 import ShapleyQMixer
         elif args.name == "sqmix_v9":
             from modules.mixers.sqmix_v9 import ShapleyQMixer
+        elif args.name == "sqmix_v5_trick":
+            from modules.mixers.sqmix_v5_trick import ShapleyQMixer
         self.mac = mac
         self.logger = logger
 
