@@ -2,6 +2,7 @@ from envs import REGISTRY as env_REGISTRY
 from functools import partial
 from components.episode_buffer import EpisodeBatch
 import numpy as np
+import torch as th
 
 
 class EpisodeRunner:
@@ -115,6 +116,32 @@ class EpisodeRunner:
             self.log_train_stats_t = self.t_env
 
         return self.batch
+
+    def cal_values(self, batch):
+
+        test_mode = True
+
+        terminated = False
+        episode_return = 0
+        self.mac.init_hidden(batch_size=self.batch_size)
+
+        t, t_env = 0, 0
+        values = []
+
+        while batch["terminated"][0][t] == 0: 
+            # Pass the entire batch of experiences up till now to the agents
+            # Receive the actions for each agent at this timestep in a batch of size 1
+
+            # YZ: Calculate values
+            agent_outs = self.mac.forward(batch, t, test_mode=test_mode)
+            avail_actions = batch["avail_actions"][:, t]
+            agent_outs[avail_actions == 0.0] = -float("inf")
+            values.append(agent_outs)
+
+            t += 1
+
+        values = th.stack(values, 1)
+        return values
 
     def _log(self, returns, stats, prefix):
         self.logger.log_stat(prefix + "return_mean", np.mean(returns), self.t_env)

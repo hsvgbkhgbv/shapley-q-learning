@@ -14,7 +14,7 @@ runner_log_interval: 2000 # Log runner stats (not test stats) every {} timesteps
 learner_log_interval: 2000 # Log training stats every {} timesteps
 t_max: 10000 # Stop running after this many timesteps
 use_cuda: True # Use gpu by default unless it isn't available
-buffer_cpu_only: False # If true we won't keep all of the replay buffer in vram
+buffer_cpu_only: True # If true we won't keep all of the replay buffer in vram
 
 # --- Logging options ---
 use_tensorboard: False # Log results to tensorboard
@@ -51,3 +51,11 @@ training_iters: 1 # Number of times to train after doing $(batch_size_run) episo
 repeat_id: 1
 label: "default_label"
 seed: null
+
+# --- Print values params ---
+save_batch_path: ""
+load_batch_path: ""
+save_values_path: ""
+
+
+
