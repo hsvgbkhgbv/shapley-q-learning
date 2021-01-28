@@ -71,7 +71,7 @@ def run(_run, _config, _log, pymongo_client=None):
 
 
 def evaluate_sequential(args, runner):
-
+    
     for _ in range(args.test_nepisode):
         batch = runner.run(test_mode=True)
 
@@ -158,13 +158,14 @@ def run_sequential(args, logger):
         runner.t_env = timestep_to_load
 
         if args.evaluate or args.save_replay:
-            evaluate_sequential(args, runner)
 
             # YZ: save the last episode data
             if args.load_batch_path != "":
                 batch = th.load(args.load_batch_path)
                 values = runner.cal_values(batch) 
                 th.save(values, args.save_values_path)
+            else:
+                evaluate_sequential(args, runner)
             return
 
     # start training
