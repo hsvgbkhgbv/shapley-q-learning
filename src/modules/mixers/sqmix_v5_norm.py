@@ -16,6 +16,7 @@ class ShapleyQMixer(nn.Module):
         self.n_actions = args.n_actions
 
         self.sample_size = args.sample_size
+        self.state_normaliser = RunningMeanStd(self.state_dim)
 
         # w(s,u)
         if self.arch == "observation_action":
@@ -30,12 +31,10 @@ class ShapleyQMixer(nn.Module):
             self.hyper_w_final = nn.Linear(self.state_dim, self.embed_dim)
         elif getattr(args, "hypernet_layers", 1) == 2:
             hypernet_embed = self.args.hypernet_embed
-            self.hyper_w_1 = nn.Sequential(nn.BatchNorm1d(self.state_dim),
-                                           nn.Linear(self.state_dim, hypernet_embed),
+            self.hyper_w_1 = nn.Sequential(nn.Linear(self.state_dim, hypernet_embed),
                                            nn.ReLU(),
                                            nn.Linear(hypernet_embed, self.embed_dim * 2))
-            self.hyper_w_final = nn.Sequential(nn.BatchNorm1d(self.state_dim),
-                                               nn.Linear(self.state_dim, hypernet_embed),
+            self.hyper_w_final = nn.Sequential(nn.Linear(self.state_dim, hypernet_embed),
                                                nn.ReLU(),
                                                nn.Linear(hypernet_embed, self.embed_dim))
         elif getattr(args, "hypernet_layers", 1) > 2:
@@ -169,6 +168,9 @@ class ShapleyQMixer(nn.Module):
     def forward(self, states, actions, agent_qs, max_filter, target=True):
         # agent_qs, max_filter = (b, t, n)
         reshape_states = states.contiguous().view(-1, self.state_dim)
+        self.state_normaliser.update(reshape_states)
+        # normalise state
+        reshape_states = (reshape_states - self.state_normaliser.mean) / th.sqrt(self.state_normaliser.var)
         reshape_agent_qs = agent_qs.unsqueeze(-1).contiguous().view(-1, self.n_agents, 1)
         if target:
             return th.sum(agent_qs, dim=2, keepdim=True)
@@ -185,3 +187,34 @@ class ShapleyQMixer(nn.Module):
                 # if the agent with the max-action then w=1
                 # otherwise the agent will use the learned w
                 return ( (w_estimates * non_max_filter + max_filter) * agent_qs).sum(dim=2, keepdim=True), w_estimates
+
+
+class RunningMeanStd(nn.Module):
+    # https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
+    def __init__(self, epsilon=1e-4, shape=()):
+        super(RunningMeanStd, self).__init__()
+        self.mean = th.zeros(shape).cuda()
+        self.var = th.ones(shape).cuda()
+        self.count = epsilon
+
+    def update(self, x):
+        batch_mean = th.mean(x, dim=0)
+        batch_var = th.var(x, dim=0)
+        batch_count = x.size(0)
+        self.update_from_moments(batch_mean, batch_var, batch_count)
+
+    def update_from_moments(self, batch_mean, batch_var, batch_count):
+        delta = batch_mean - self.mean
+        tot_count = self.count + batch_count
+
+        new_mean = self.mean + delta * batch_count / tot_count
+        m_a = self.var * (self.count)
+        m_b = batch_var * (batch_count)
+        M2 = m_a + m_b + delta**2 * self.count * batch_count / (self.count + batch_count)
+        new_var = M2 / (self.count + batch_count)
+
+        new_count = batch_count + self.count
+
+        self.mean = new_mean
+        self.var = new_var
+        self.count = new_count
