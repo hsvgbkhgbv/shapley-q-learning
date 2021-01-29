@@ -50,6 +50,8 @@ class EpsilonGreedyActionSelector():
         if test_mode:
             # Greedy action selection only
             self.epsilon = 0.0
+            if self.args.epsilon_test:
+                self.epsilon = self.args.epsilon_test
 
         # mask actions that are excluded from selection
         masked_q_values = agent_inputs.clone()
