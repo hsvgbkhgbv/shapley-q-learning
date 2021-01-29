@@ -36,6 +36,11 @@ class BasicMAC:
                 agent_outs[reshaped_avail_actions == 0] = -1e10
 
             agent_outs = th.nn.functional.softmax(agent_outs, dim=-1)
+            # jianhong
+            if test_mode and (not args.test_greedy):
+                agent_outs = ((1 - self.action_selector.epsilon) * agent_outs
+                               + th.ones_like(agent_outs) * self.action_selector.epsilon/epsilon_action_num)
+
             if not test_mode:
                 # Epsilon floor
                 epsilon_action_num = agent_outs.size(-1)
