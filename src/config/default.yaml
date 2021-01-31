@@ -53,7 +53,7 @@ label: "default_label"
 seed: null
 
 # --- Print values params ---
-epsilon_test: 0.2
+epsilon_test: False # during training, PLEASE SET IT TO False
 save_batch_path: ""
 load_batch_path: ""
 save_values_path: ""
