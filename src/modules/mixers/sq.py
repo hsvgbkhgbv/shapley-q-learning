@@ -11,93 +11,34 @@ class ShapleyQMixer(nn.Module):
         self.args = args
         self.n_agents = args.n_agents
         self.state_dim = int(np.prod(args.state_shape))
-        self.arch = args.arch
         self.embed_dim = args.mixing_embed_dim
         self.n_actions = args.n_actions
 
         self.sample_size = args.sample_size
 
-        # w(s,u) f(s,u) g(s,u)
-        if self.arch == "partial_action_observation":
-            # w,f,g takes [state, u] as input
-            w_input_size = self.state_dim + self.n_actions
-            f_input_size = self.state_dim + self.n_actions
-            g_input_size = self.state_dim + self.n_actions
-        elif self.arch == "history_action_observation":
-            # w,f,g takes [state, agent_action_observation_encodings]
-            w_input_size = self.state_dim + self.args.rnn_hidden_dim + self.n_actions
-            f_input_size = self.state_dim + self.args.rnn_hidden_dim + self.n_actions
-            g_input_size = self.state_dim + self.args.rnn_hidden_dim + self.n_actions
+        if getattr(args, "hypernet_layers", 1) == 1:
+            self.hyper_w_1 = nn.Linear(self.state_dim, self.embed_dim * 2)
+            self.hyper_w_final = nn.Linear(self.state_dim, self.embed_dim)
+        elif getattr(args, "hypernet_layers", 1) == 2:
+            hypernet_embed = self.args.hypernet_embed
+            self.hyper_w_1 = nn.Sequential(nn.Linear(self.state_dim, hypernet_embed),
+                                           nn.ReLU(),
+                                           nn.Linear(hypernet_embed, self.embed_dim * 2))
+            self.hyper_w_final = nn.Sequential(nn.Linear(self.state_dim, hypernet_embed),
+                                           nn.ReLU(),
+                                           nn.Linear(hypernet_embed, self.embed_dim))
+        elif getattr(args, "hypernet_layers", 1) > 2:
+            raise Exception("Sorry >2 hypernet layers is not implemented!")
         else:
-            raise Exception("{} is not a valid ShapleyQ architecture".format(self.arch))
+            raise Exception("Error setting number of hypernet layers.")
 
-        if self.args.network_size == "small":
-            w_list = [ nn.Sequential(nn.Linear(w_input_size, self.embed_dim),
-                                     nn.ReLU(),
-                                     nn.Linear(self.embed_dim, 1),
-                                     nn.Tanh()
-                                ) 
-                                for _ in range(self.n_agents)
-                            ]
-            self.w_list = nn.ModuleList(w_list)
-            
-            f_list = [ nn.Sequential(nn.Linear(f_input_size, self.embed_dim),
-                                     nn.ReLU(),
-                                     nn.Linear(self.embed_dim, 1),
-                                    #  nn.Sigmoid()
-                                ) 
-                                for _ in range(self.n_agents)
-                            ]
-            self.f_list = nn.ModuleList(f_list)
+        # State dependent bias for hidden layer
+        self.hyper_b_1 = nn.Linear(self.state_dim, self.embed_dim)
+        # State dependent bias for the last layers
+        self.hyper_b_2 = nn.Sequential(nn.Linear(self.state_dim, self.embed_dim),
+                            nn.ReLU(),
+                            nn.Linear(self.embed_dim, 1))
 
-            g_list = [ nn.Sequential(nn.Linear(g_input_size, self.embed_dim),
-                                     nn.ReLU(),
-                                     nn.Linear(self.embed_dim, 1),
-                                     nn.Sigmoid()
-                                ) 
-                                for _ in range(self.n_agents)
-                            ]
-            self.g_list = nn.ModuleList(g_list)
-
-        elif self.args.network_size == "big":
-            w_list = [ nn.Sequential(nn.Linear(w_input_size, self.embed_dim),
-                                     nn.ReLU(),
-                                     nn.Linear(self.embed_dim, self.embed_dim),
-                                     nn.ReLU(),
-                                     nn.Linear(self.embed_dim, self.embed_dim),
-                                     nn.ReLU(),
-                                     nn.Linear(self.embed_dim, 1)
-                                ) 
-                                for _ in range(self.n_agents)
-                            ]
-            self.w_list = nn.ModuleList(w_list)
-            
-            f_list = [ nn.Sequential(nn.Linear(f_input_size, self.embed_dim),
-                                     nn.ReLU(),
-                                     nn.Linear(self.embed_dim, self.embed_dim),
-                                     nn.ReLU(),
-                                     nn.Linear(self.embed_dim, self.embed_dim),
-                                     nn.ReLU(),
-                                     nn.Linear(self.embed_dim, 1)
-                                ) 
-                                for _ in range(self.n_agents)
-                            ]
-            self.f_list = nn.ModuleList(f_list)
-
-            g_list = [ nn.Sequential(nn.Linear(g_input_size, self.embed_dim),
-                                     nn.ReLU(),
-                                     nn.Linear(self.embed_dim, self.embed_dim),
-                                     nn.ReLU(),
-                                     nn.Linear(self.embed_dim, self.embed_dim),
-                                     nn.ReLU(),
-                                     nn.Linear(self.embed_dim, 1)
-                                ) 
-                                for _ in range(self.n_agents)
-                            ]
-            self.g_list = nn.ModuleList(g_list)
-
-        else:
-            assert False
 
     def sample_grandcoalitions(self, batch_size):
         """
@@ -142,99 +83,84 @@ class ShapleyQMixer(nn.Module):
                                                                                                  self.n_agents) # shape = (b, n_s, n, n)
         return subcoalition_map, individual_map, grand_coalitions
 
-    def get_f_estimate(self, states, actions):
-        f_estimates = []
-        for i in range(self.n_agents):
-            inputs = th.cat([states, actions[:, i, :]], dim=1)
-            f_estimates.append(self.f_list[i](inputs))
-        f_estimates = th.stack(f_estimates, dim=1) # shape = (b, n, 1)
-        return f_estimates
-    
-    def get_g_estimate(self, states, actions):
-        g_estimates = []
-        for i in range(self.n_agents):
-            inputs = th.cat([states, actions[:, i, :]], dim=1)
-            g_estimates.append(self.g_list[i](inputs))
-        g_estimates = th.stack(g_estimates, dim=1) # shape = (b, n, 1)
-        return g_estimates
 
-    def get_w_estimate(self, states, actions):
-        w_estimates = []
-        for i in range(self.n_agents):
-            inputs = th.cat([states, actions[:, i, :]], dim=1)
-            w_estimates.append(self.w_list[i](inputs))
-        w_estimates = th.stack(w_estimates, dim=1) # shape = (b, n, 1)
-        return w_estimates
-
-    def get_marginal_contribution(self, states, actions):
+    def get_w_estimate(self, states, agent_qs):
         batch_size = states.size(0)
+
+        # get subcoalition map including agent i
         subcoalition_map, individual_map, grand_coalitions = self.sample_grandcoalitions(batch_size) # shape = (b, n_s, n, n)
+
+        # reshape the grand coalition map for rearranging the sequence of actions of agents
         grand_coalitions = grand_coalitions.unsqueeze(-1).expand(batch_size, 
                                                                  self.sample_size, 
                                                                  self.n_agents, 
                                                                  self.n_agents, 
                                                                  1) # shape = (b, n_s, n, n, 1)
-        
-        w_est = self.get_w_estimate(states, actions) # shape = (b, n, 1)
-        f_est = self.get_f_estimate(states, actions) # shape = (b, n, 1)
-        g_est = self.get_g_estimate(states, actions) # shape = (b, n, 1)
 
-        f_est = f_est.unsqueeze(1).unsqueeze(2).expand(batch_size, 
-                                                       self.sample_size, 
-                                                       self.n_agents, 
-                                                       self.n_agents, 
-                                                       1).gather(3, grand_coalitions) # shape = (b, n, 1) -> (b, 1, 1, n, 1) -> (b, n_s, n, n, 1)
-        
-        g_est = g_est.unsqueeze(1).unsqueeze(2).expand(batch_size, 
-                                                       self.sample_size, 
-                                                       self.n_agents, 
-                                                       self.n_agents, 
-                                                       1).gather(3, grand_coalitions) # shape = (b, n, 1) -> (b, 1, 1, n, 1) -> (b, n_s, n, n, 1)
-
-        subcoalition_map = subcoalition_map.unsqueeze(-1).float() # shape = (b, n_s, n, n, 1)
-        individual_map = individual_map.unsqueeze(-1).float() # shape = (b, n_s, n, n, 1)
         # remove agent i from the subcloation map
-        subcoalition_map = subcoalition_map - individual_map
-        # flip the subcoalition map
-        mask_subcoalition_map = 1 - subcoalition_map
-
-        f_est_subcoalition = f_est * subcoalition_map
-        # TODO: check
-        f_est_subcoalition = f_est_subcoalition + mask_subcoalition_map
-        f_est_subcoalition = f_est_subcoalition.contiguous().view(batch_size, self.sample_size, self.n_agents, -1) # shape = (b, n_s, n, n)
-        f_est_individual = f_est * individual_map
-        f_est_individual = f_est_individual.contiguous().view(batch_size, self.sample_size, self.n_agents, -1) # shape = (b, n_s, n, n)
-        g_est_individual = g_est * individual_map
-        g_est_individual = g_est_individual.contiguous().view(batch_size, self.sample_size, self.n_agents, -1) # shape = (b, n_s, n, n)
-        aux_ones = th.ones(self.n_agents).cuda()
+        subcoalition_map_no_i = subcoalition_map - individual_map
+        subcoalition_map_no_i = subcoalition_map_no_i.unsqueeze(-1).expand(batch_size, 
+                                                                 self.sample_size, 
+                                                                 self.n_agents, 
+                                                                 self.n_agents, 
+                                                                 1) # shape = (b, n_s, n, n, 1)
         
-        # normal_marginal_contribution
-        # normal_marginal_contribution = f_est_subcoalition.prod(dim=-1) * (th.matmul(f_est_individual, aux_ones) - 1) - th.matmul(g_est_individual, aux_ones) # shape = (b, n_s, n)
-        normal_marginal_contribution = f_est_subcoalition.prod(dim=-1) + th.matmul(f_est_individual, aux_ones) - th.matmul(g_est_individual, aux_ones) # shape = (b, n_s, n)
-        normal_marginal_contribution = normal_marginal_contribution.unsqueeze(-1) # shape = (b, n_s, n, 1)
+        # reshape actions for further process on coalitions
+        reshape_agent_qs = agent_qs.unsqueeze(1).unsqueeze(2).expand(batch_size, 
+                                                        self.sample_size, 
+                                                        self.n_agents, 
+                                                        self.n_agents, 
+                                                        1).gather(3, grand_coalitions) # shape = (b, n, 1) -> (b, 1, 1, n, 1) -> (b, n_s, n, n, 1)
 
-        # optimal_marginal_contribution
-        # optimal_marginal_contribution = f_est_subcoalition.prod(dim=-1) * (th.matmul(f_est_individual, aux_ones) - 1) # shape = (b, n_s, n)
-        optimal_marginal_contribution = f_est_subcoalition.prod(dim=-1) + th.matmul(f_est_individual, aux_ones) # shape = (b, n_s, n)
-        optimal_marginal_contribution = optimal_marginal_contribution.unsqueeze(-1) # shape = (b, n_s, n, 1)
+        # get actions of its coalition memebers for each agent
+        agent_qs_coalition = reshape_agent_qs * subcoalition_map_no_i # shape = (b, n_s, n, n, 1)
 
-        # w_inverse_est
-        w_inv_est = (w_est.squeeze(-1).unsqueeze(1).expand(batch_size, self.n_agents, self.n_agents) * th.eye(self.n_agents).cuda()).inverse().matmul(th.ones(self.n_agents).cuda()).unsqueeze(-1) # shape = (b, n, 1)
-        
-        return normal_marginal_contribution, optimal_marginal_contribution, w_inv_est, w_est
+        # get actions vector of its coalition members for each agent
+        subcoalition_map_no_i_ = subcoalition_map_no_i.sum(dim=-2).clone()
+        subcoalition_map_no_i_[subcoalition_map_no_i.sum(dim=-2)==0] = 1
+        agent_qs_coalition_norm_vec = agent_qs_coalition.sum(dim=-2) / subcoalition_map_no_i_ # shape = (b, n_s, n, 1)
 
-    def forward(self, states, actions):
-        states = states.reshape(-1, self.state_dim)
-        actions = actions.reshape(-1, self.n_agents, self.n_actions).float()
+        # get action vector of each agent
+        agent_qs_individual = agent_qs.unsqueeze(1).expand_as(agent_qs_coalition_norm_vec) # shape = (b, n_s, n, 1)
 
-        normal_marginal_contribution, optimal_marginal_contribution, w_inv_est, w_est = self.get_marginal_contribution(states, actions)
-        shapley_q = normal_marginal_contribution.mean(dim=1) # shape = (b*t, n, 1)
-        optimal_shapley_q = optimal_marginal_contribution.mean(dim=1) # shape = (b*t, n, 1)
-        sum_optimal_shapley_q = optimal_shapley_q.sum(dim=1) # shape = (b*t, 1)
-        # sum_shapley_q = shapley_q.sum(dim=1) # shape = (b*t, 1)
+        reshape_agent_qs_coalition_norm_vec = agent_qs_coalition_norm_vec.contiguous().view(-1, 1) # shape = (b*n_s*n, 1)
+        reshape_agent_qs_individual = agent_qs_individual.contiguous().view(-1, 1) # shape = (b*n_s*n, 1)
+        reshape_states = states.unsqueeze(1).unsqueeze(2).expand(batch_size, self.sample_size, self.n_agents, self.state_dim).contiguous().view(-1, self.state_dim) # shape = (b*n_s*n, s)
 
-        inv_proj_shapley_q = w_inv_est * shapley_q # shape = (b*t, n, 1)
-        # inv_proj_shapley_q = w_inv_est * optimal_shapley_q # shape = (b*t, n, 1)
+        inputs = th.cat([reshape_agent_qs_coalition_norm_vec, reshape_agent_qs_individual], dim=-1).unsqueeze(1) # shape = (b*n_s*n, 1, 2*1)
 
-        return inv_proj_shapley_q, sum_optimal_shapley_q, w_est, shapley_q
-        # return inv_proj_shapley_q, sum_optimal_shapley_q, w_est, optimal_shapley_q
+        # First layer
+        w1 = th.abs(self.hyper_w_1(reshape_states))
+        b1 = self.hyper_b_1(reshape_states)
+        w1 = w1.view(-1, 2, self.embed_dim)
+        b1 = b1.view(-1, 1, self.embed_dim)
+        hidden = F.elu(th.bmm(inputs, w1) + b1)
+        # Second layer
+        w_final = th.abs(self.hyper_w_final(reshape_states))
+        w_final = w_final.view(-1, self.embed_dim, 1)
+        b2 = self.hyper_b_2(reshape_states).view(-1, 1, 1)
+        # Compute final output
+        y = th.bmm(hidden, w_final) + b2
+        # Reshape and return
+        w_estimates = th.abs(y).view(batch_size, self.sample_size, self.n_agents) # shape = (b, n_s, n)
+        # normalise among the sample_size
+        w_estimates = w_estimates.mean(dim=1) # shape = (b, n)
+
+        return w_estimates
+
+
+    def forward(self, states, actions, agent_qs, max_filter, target=True):
+        # agent_qs, max_filter = (b, t, n)
+        reshape_states = states.contiguous().view(-1, self.state_dim)
+        reshape_agent_qs = agent_qs.unsqueeze(-1).contiguous().view(-1, self.n_agents, 1)
+        if target:
+            return th.sum(agent_qs, dim=2, keepdim=True)
+        else:
+            w_estimates = self.get_w_estimate(reshape_states, reshape_agent_qs)
+            # restrict the range of w to [1, \infty)
+            w_estimates = w_estimates + 1
+            w_estimates = w_estimates.contiguous().view(states.size(0), states.size(1), self.n_agents)
+            # agent with non-max action will be given 1
+            non_max_filter = 1 - max_filter
+            # if the agent with the max-action then w = 1. Otherwise, the agent will use the learned w
+            return ( (w_estimates * non_max_filter + max_filter) * agent_qs).sum(dim=2, keepdim=True), w_estimates

@@ -1,4 +1,4 @@
-# --- QMIX specific parameters ---
+# --- Shapley Q-learning specific parameters ---
 
 # use epsilon greedy action selector
 action_selector: "epsilon_greedy"
@@ -13,15 +13,11 @@ buffer_size: 5000
 
 # update the target network every {} episodes
 target_update_interval: 200
-mixer_update_interval: False
-arch: "observation_action"
-# sample_coalition_interval: 1
-sample_coalition_interval: 0
 
 # use the Q_Learner to train
 agent_output_type: "q"
 learner: "sq_learner"
-mixer: "sq_mixer"
+mixer: "sq"
 mixing_embed_dim: 32
 hypernet_embed: 64
 hypernet_layers: 2
@@ -29,16 +25,7 @@ double_q: True
 n_step: 1
 # give the sample size for coalition sampling
 sample_size: 10
-# w_shared_params: True
 # lr for updating w
-mixer_lr: 0.0005
-# True for applying 1 for max-operator / False for applying pure w_est
-max_filter: True
-# False to deactivate / give a coef for multiplier
-w_constraint_coef: False
-w_contrast_coef: False
-
-# network_size: "small"
-
-# sq for vanilla action and state / sq_enc for encoding action and state
-name: "sqmix_v5_1"
+mixer_lr: 0.001
+# name of module
+name: "sq"
