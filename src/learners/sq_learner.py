@@ -88,8 +88,8 @@ class SQLearner:
 
         # Mix
         if self.mixer is not None:
-            chosen_action_qvals, w_est = self.mixer(batch["state"][:, :-1], one_hot_actions, chosen_action_qvals, max_filter, target=False)
-            target_max_qvals = self.mixer(batch["state"][:, 1:], one_hot_actions, target_max_qvals, max_filter, target=True)
+            chosen_action_qvals, w_est = self.mixer(batch["state"][:, :-1], one_hot_actions, chosen_action_qvals, max_filter, target=False, manual_w_estimates=self.args.manual_w_estimates)
+            target_max_qvals = self.mixer(batch["state"][:, 1:], one_hot_actions, target_max_qvals, max_filter, target=True, manual_w_estimates=self.args.manual_w_estimates)
 
         N = getattr(self.args, "n_step", 1)
         if N == 1:

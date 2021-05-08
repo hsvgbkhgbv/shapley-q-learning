@@ -23,6 +23,8 @@ hypernet_embed: 64
 hypernet_layers: 2
 double_q: True
 n_step: 1
+# if given None, it will be automatically learning w. If given some decimals, it will be applied as w_estimates.
+manual_w_estimates: None
 # give the sample size for coalition sampling
 sample_size: 10
 # lr for updating w

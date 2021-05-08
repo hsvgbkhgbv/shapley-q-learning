@@ -149,14 +149,17 @@ class ShapleyQMixer(nn.Module):
         return w_estimates
 
 
-    def forward(self, states, actions, agent_qs, max_filter, target=True):
+    def forward(self, states, actions, agent_qs, max_filter, target, manual_w_estimates=None):
         # agent_qs, max_filter = (b, t, n)
         reshape_states = states.contiguous().view(-1, self.state_dim)
         reshape_agent_qs = agent_qs.unsqueeze(-1).contiguous().view(-1, self.n_agents, 1)
         if target:
             return th.sum(agent_qs, dim=2, keepdim=True)
         else:
-            w_estimates = self.get_w_estimate(reshape_states, reshape_agent_qs)
+            if manual_w_estimates == None:
+                w_estimates = self.get_w_estimate(reshape_states, reshape_agent_qs)
+            else:
+                w_estimates = manual_w_estimates * th.ones_like(max_filter)
             # restrict the range of w to [1, \infty)
             w_estimates = w_estimates + 1
             w_estimates = w_estimates.contiguous().view(states.size(0), states.size(1), self.n_agents)
