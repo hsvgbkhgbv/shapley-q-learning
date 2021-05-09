@@ -158,10 +158,10 @@ class ShapleyQMixer(nn.Module):
         else:
             if manual_w_estimates == None:
                 w_estimates = self.get_w_estimate(reshape_states, reshape_agent_qs)
+                # restrict the range of w to [1, \infty)
+                w_estimates = w_estimates + 1
             else:
                 w_estimates = manual_w_estimates * th.ones_like(max_filter)
-            # restrict the range of w to [1, \infty)
-            w_estimates = w_estimates + 1
             w_estimates = w_estimates.contiguous().view(states.size(0), states.size(1), self.n_agents)
             # agent with non-max action will be given 1
             non_max_filter = 1 - max_filter
