@@ -5,11 +5,11 @@ from torch.optim import RMSprop, SGD
 
 
 
-class SQLearner:
+class SHAQLearner:
     def __init__(self, mac, scheme, logger, args):
         self.args = args
-        if args.name == "sq":
-            from modules.mixers.sq import ShapleyQMixer
+        if args.name == "shaq":
+            from modules.mixers.shaq import ShapleyQMixer
         else:
             raise Exception("Please give the correct mixer name!")
 

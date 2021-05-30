@@ -16,8 +16,8 @@ target_update_interval: 200
 
 # use the Q_Learner to train
 agent_output_type: "q"
-learner: "sq_learner"
-mixer: "sq"
+learner: "shaq_learner"
+mixer: "shaq"
 mixing_embed_dim: 32
 hypernet_embed: 64
 hypernet_layers: 2
@@ -30,4 +30,4 @@ sample_size: 10
 # lr for updating w
 mixer_lr: 0.001
 # name of module
-name: "sq"
+name: "shaq"
