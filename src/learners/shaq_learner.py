@@ -9,7 +9,7 @@ class SHAQLearner:
     def __init__(self, mac, scheme, logger, args):
         self.args = args
         if args.name == "shaq":
-            from modules.mixers.shaq import ShapleyQMixer
+            from modules.mixers.shaq import SHAQMixer
         else:
             raise Exception("Please give the correct mixer name!")
 
@@ -24,7 +24,7 @@ class SHAQLearner:
 
         self.mixer = None
         if args.mixer is not None:
-            self.mixer = ShapleyQMixer(args)
+            self.mixer = SHAQMixer(args)
             self.params_mixer = list(self.mixer.parameters())
 
         self.optimiser = RMSprop(params=self.params, lr=args.lr, alpha=args.optim_alpha, eps=args.optim_eps)
