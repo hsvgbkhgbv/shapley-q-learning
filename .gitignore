@@ -110,3 +110,5 @@ profiler/
 venv/
 3rdparty
 *.txt
+__MACOSX/
+.vscode/
