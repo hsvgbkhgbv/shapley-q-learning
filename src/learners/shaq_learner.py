@@ -28,7 +28,7 @@ class SHAQLearner:
             self.params_mixer = list(self.mixer.parameters())
 
         self.optimiser = RMSprop(params=self.params, lr=args.lr, alpha=args.optim_alpha, eps=args.optim_eps)
-        self.optimiser_mixer = RMSprop(params=self.params_mixer, lr=args.mixer_lr, alpha=args.optim_alpha, eps=args.optim_eps)
+        self.optimiser_mixer = RMSprop(params=self.params_mixer, lr=args.alpha_lr, alpha=args.optim_alpha, eps=args.optim_eps)
 
         # a little wasteful to deepcopy (e.g. duplicates action selector), but should work for any MAC
         self.target_mac = copy.deepcopy(mac)

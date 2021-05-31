@@ -28,6 +28,6 @@ manual_alpha_estimates: None
 # give the sample size for coalition sampling
 sample_size: 10
 # lr for updating alpha
-mixer_lr: 0.001
+alpha_lr: 0.001
 # name of module
 name: "shaq"

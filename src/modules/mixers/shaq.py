@@ -84,7 +84,7 @@ class SHAQMixer(nn.Module):
         return subcoalition_map, individual_map, grand_coalitions
 
 
-    def get_w_estimate(self, states, agent_qs):
+    def get_alpha_estimate(self, states, agent_qs):
         batch_size = states.size(0)
 
         # get subcoalition map including agent i
@@ -157,7 +157,7 @@ class SHAQMixer(nn.Module):
             return th.sum(agent_qs, dim=2, keepdim=True)
         else:
             if manual_alpha_estimates == None:
-                alpha_estimates = self.get_w_estimate(reshape_states, reshape_agent_qs)
+                alpha_estimates = self.get_alpha_estimate(reshape_states, reshape_agent_qs)
                 # restrict the range of alpha to [1, \infty)
                 alpha_estimates = alpha_estimates + 1
                 alpha_estimates = alpha_estimates.contiguous().view(states.size(0), states.size(1), self.n_agents)
