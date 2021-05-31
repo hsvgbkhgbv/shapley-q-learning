@@ -142,28 +142,28 @@ class SHAQMixer(nn.Module):
         # Compute final output
         y = th.bmm(hidden, w_final) + b2
         # Reshape and return
-        w_estimates = th.abs(y).view(batch_size, self.sample_size, self.n_agents) # shape = (b, n_s, n)
+        alpha_estimates = th.abs(y).view(batch_size, self.sample_size, self.n_agents) # shape = (b, n_s, n)
         # normalise among the sample_size
-        w_estimates = w_estimates.mean(dim=1) # shape = (b, n)
+        alpha_estimates = alpha_estimates.mean(dim=1) # shape = (b, n)
 
-        return w_estimates
+        return alpha_estimates
 
 
-    def forward(self, states, actions, agent_qs, max_filter, target, manual_w_estimates=None):
+    def forward(self, states, actions, agent_qs, max_filter, target, manual_alpha_estimates=None):
         # agent_qs, max_filter = (b, t, n)
         reshape_states = states.contiguous().view(-1, self.state_dim)
         reshape_agent_qs = agent_qs.unsqueeze(-1).contiguous().view(-1, self.n_agents, 1)
         if target:
             return th.sum(agent_qs, dim=2, keepdim=True)
         else:
-            if manual_w_estimates == None:
-                w_estimates = self.get_w_estimate(reshape_states, reshape_agent_qs)
-                # restrict the range of w to [1, \infty)
-                w_estimates = w_estimates + 1
-                w_estimates = w_estimates.contiguous().view(states.size(0), states.size(1), self.n_agents)
+            if manual_alpha_estimates == None:
+                alpha_estimates = self.get_w_estimate(reshape_states, reshape_agent_qs)
+                # restrict the range of alpha to [1, \infty)
+                alpha_estimates = alpha_estimates + 1
+                alpha_estimates = alpha_estimates.contiguous().view(states.size(0), states.size(1), self.n_agents)
             else:
-                w_estimates = manual_w_estimates * th.ones_like(max_filter)
+                alpha_estimates = manual_alpha_estimates * th.ones_like(max_filter)
             # agent with non-max action will be given 1
             non_max_filter = 1 - max_filter
-            # if the agent with the max-action then w = 1. Otherwise, the agent will use the learned w
-            return ( (w_estimates * non_max_filter + max_filter) * agent_qs).sum(dim=2, keepdim=True), w_estimates
+            # if the agent with the max-action then alpha = 1. Otherwise, the agent will use the learned alpha
+            return ( (alpha_estimates * non_max_filter + max_filter) * agent_qs).sum(dim=2, keepdim=True), alpha_estimates
