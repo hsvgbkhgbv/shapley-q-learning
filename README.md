@@ -4,6 +4,8 @@ Based on PyMARL (https://github.com/oxwhirl/pymarl/). Please refer to that repo 
 
 The baselines used in this paper are from the repo of Weighted QMIX (https://github.com/oxwhirl/wqmix). To know more about baselines, please refer to that repo.
 
+The model implemented in this paper is based on Pytorch 1.4.0.
+
 ## Included in this repo
 
 In particular implementations for:
