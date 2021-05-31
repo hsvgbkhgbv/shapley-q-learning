@@ -98,6 +98,7 @@ com_crashlytics_export_strings.xml
 __pycache__
 mongodb/
 results/
+results*
 pool/
 notebook/
 tb_logs/
