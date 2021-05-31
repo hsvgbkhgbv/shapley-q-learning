@@ -132,7 +132,7 @@ class EpisodeRunner:
             # Pass the entire batch of experiences up till now to the agents
             # Receive the actions for each agent at this timestep in a batch of size 1
 
-            # YZ: Calculate values
+            # Calculate values
             agent_outs = self.mac.forward(batch, t, test_mode=test_mode)
             avail_actions = batch["avail_actions"][:, t]
             agent_outs[avail_actions == 0.0] = -float("inf")
