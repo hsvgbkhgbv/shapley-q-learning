@@ -43,4 +43,14 @@ python3 src/main.py --config=shaq --env-config=sc2 with env_args.map_name=2c_vs_
 ```
 
 ## Citing
-
+If you use part of the work mentioned in this paper, please cite
+```
+@misc{wang2021shaq,
+      title={SHAQ: Incorporating Shapley Value Theory into Q-Learning for Multi-Agent Reinforcement Learning},
+      author={Jianhong Wang and Jinxin Wang and Yuan Zhang and Yunjie Gu and Tae-Kyun Kim},
+      year={2021},
+      eprint={2105.15013},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+```
