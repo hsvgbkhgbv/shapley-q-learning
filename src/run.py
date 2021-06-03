@@ -75,7 +75,6 @@ def evaluate_sequential(args, runner):
     for _ in range(args.test_nepisode):
         batch = runner.run(test_mode=True)
 
-    # YZ: save the last episode data
     if args.save_batch_path != "":
         th.save(batch, args.save_batch_path)
 
@@ -158,8 +157,6 @@ def run_sequential(args, logger):
         runner.t_env = timestep_to_load
 
         if args.evaluate or args.save_replay:
-
-            # YZ: save the last episode data
             if args.load_batch_path != "":
                 batch = th.load(args.load_batch_path)
                 values = runner.cal_values(batch) 

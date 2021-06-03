@@ -1,6 +1,6 @@
 # SHAQ: Incorporating Shapley Value Theory into Q-Learning for Multi-Agent Reinforcement Learning
 
-This is the implementation of the paper SHAQ: Incorporating Shapley Value Theory into Q-Learning for Multi-Agent Reinforcement Learning (https://arxiv.org/abs/2105.15013).
+This is the implementation of the paper SHAQ: Incorporating Shapley Value Theory into Q-Learning for Multi-Agent Reinforcement Learning 
 
 The implementation is based on PyMARL (https://github.com/oxwhirl/pymarl/). Please refer to that repo for more documentation.
 
@@ -42,17 +42,4 @@ Please see the Appendix of the paper for the exact hyper-parameters used.
 As an example, to run the SHAQ on SMAC: 2c_vs_64zg with epsilon annealed over 50k time steps:
 ```shell
 python3 src/main.py --config=shaq --env-config=sc2 with env_args.map_name=2c_vs_64zg alpha_lr=0.002 epsilon_anneal_time=50000
-```
-
-## Citing
-If you use part of the work mentioned in this paper, please cite
-```
-@misc{wang2021shaq,
-      title={SHAQ: Incorporating Shapley Value Theory into Q-Learning for Multi-Agent Reinforcement Learning},
-      author={Jianhong Wang and Jinxin Wang and Yuan Zhang and Yunjie Gu and Tae-Kyun Kim},
-      year={2021},
-      eprint={2105.15013},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
-}
 ```
