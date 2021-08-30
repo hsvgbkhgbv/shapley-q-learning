@@ -29,13 +29,13 @@ About the hyperparameter settings of variant experiments, the full details are l
 | SMAC: 2c_vs_64zg | 0.002 | 50k |
 | SMAC: 3s_vs_5z | 0.001 | 50k |
 | SMAC: 5m_vs_6m | 0.0005 | 50k |
-| SMAC: 6h_vs_8z | 0.0005 | 10mil |
+| SMAC: 6h_vs_8z | 0.0005 | 1mil |
 | SMAC: 3s5z | 0.0003 | 50k |
-| SMAC: 3s5z_vs_3s6z | 0.0003 | 10mil |
+| SMAC: 3s5z_vs_3s6z | 0.0003 | 1mil |
 | SMAC: 1c3s5z | 0.0002 | 50k |
 | SMAC: 10m_vs_11m | 0.0001 | 50k |
-| SMAC: mmm2 | 0.0001 | 10mil |
-| Predator-Prey | 0.0001 | 10mil |
+| SMAC: mmm2 | 0.0001 | 1mil |
+| Predator-Prey | 0.0001 | 1mil |
 
 Please see the Appendix of the paper for the exact hyper-parameters used.
 
