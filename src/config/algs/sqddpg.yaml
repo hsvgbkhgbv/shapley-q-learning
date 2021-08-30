@@ -1,0 +1,51 @@
+# --- QMIX specific parameters ---
+
+# use epsilon greedy action selector
+action_selector: "epsilon_greedy"
+epsilon_start: 0.5
+epsilon_finish: 0.5
+epsilon_anneal_time: 50000
+
+runner: "episode"
+
+buffer_size: 5000
+
+# update the target network every {} episodes
+target_update_interval: 200
+
+actor_update_interval: 50
+critic_update_interval: 10
+
+# use the Q_Learner to train
+agent_output_type: "q" # Treat it as qs, just train via policy gradient
+#agent_output_type: "pi_logits"
+learner: "sqddpg_learner"
+double_q: False
+mixer: "sqddpg"
+
+shapley_loss: 1.0
+actor_loss: 1.0
+target_lr: 1.0
+# grad_norm_clip: 1.0
+
+central_mixing_embed_dim: 64
+mixing_embed_dim: 32
+hypernet_embed: 64
+hypernet_layers: 2
+marginal_contribution_type: "ff" # qmix or ff
+
+sample_size: 10
+
+policy_temp: 1.0
+logit_entropy: 0.01
+
+gumbel_softmax: False
+central_action_embed: 1
+# central_mac: "basic_central_mac"
+# central_agent: "central_rnn"
+
+lr: 0.0005 # Learning rate for agents
+critic_lr: 0.0005 # Learning rate for critics
+training_iters: 1
+
+name: "sqddpg"
