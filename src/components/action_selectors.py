@@ -18,15 +18,21 @@ class MultinomialActionSelector():
         self.test_greedy = getattr(args, "test_greedy", True)
 
     def select_action(self, agent_inputs, avail_actions, t_env, test_mode=False):
+        # assume the input is logits
         masked_policies = agent_inputs.clone()
-        masked_policies[avail_actions == 0.0] = 0.0
+        # fix a bug over sample()
+        masked_policies[avail_actions == 0.0] = -float("inf")
 
         self.epsilon = self.schedule.eval(t_env)
 
         if test_mode and self.test_greedy:
             picked_actions = masked_policies.max(dim=2)[1]
         else:
-            picked_actions = Categorical(masked_policies).sample().long()
+            # noise = th.rand_like(masked_policies) * 0.1
+            # noise[avail_actions == 0.0] = -float("inf")
+            # masked_policies += noise
+            # fix the bug of categorical distribution in pytorch
+            picked_actions = Categorical(logits=masked_policies).sample().long()
 
         return picked_actions
 

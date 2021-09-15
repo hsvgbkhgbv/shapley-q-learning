@@ -2,8 +2,53 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from .qmix_central_no_hyper import QMixerCentralFF
+# from .qmix_central_no_hyper import QMixerCentralFF
 from .qmix import QMixer
+
+
+
+class QMixerCentralFF(nn.Module):
+    def __init__(self, args):
+        super(QMixerCentralFF, self).__init__()
+
+        self.args = args
+
+        self.n_agents = args.n_agents
+        self.state_dim = int(np.prod(args.state_shape))
+
+        self.input_dim = self.n_agents * self.args.n_actions + self.state_dim
+        self.embed_dim = args.central_mixing_embed_dim
+        self.n_actions = args.n_actions
+
+        non_lin = nn.ReLU
+
+        self.net = nn.Sequential(nn.Linear(self.input_dim, self.embed_dim),
+                                 non_lin(),
+                                 nn.Linear(self.embed_dim, self.embed_dim),
+                                 non_lin(),
+                                 nn.Linear(self.embed_dim, self.embed_dim),
+                                 non_lin(),
+                                 nn.Linear(self.embed_dim, 1))
+
+        # V(s) instead of a bias for the last layers
+        self.V = nn.Sequential(nn.Linear(self.state_dim, self.embed_dim),
+                               non_lin(),
+                               nn.Linear(self.embed_dim, 1))
+
+    def forward(self, agent_qs, states):
+        bs = agent_qs.size(0)
+        states = states.reshape(-1, self.state_dim)
+        agent_qs = agent_qs.reshape(-1, self.n_agents * self.n_actions)
+
+        inputs = th.cat([states, agent_qs], dim=1)
+
+        advs = self.net(inputs)
+        vs = self.V(states)
+
+        y = advs + vs
+
+        q_tot = y.view(bs, -1, 1)
+        return q_tot
 
 
 
@@ -82,7 +127,7 @@ class SQDDPGMixer(nn.Module):
                                                                  self.sample_size, 
                                                                  self.n_agents, 
                                                                  self.n_agents, 
-                                                                 1) # shape = (b, n_s, n, n, 1)
+                                                                 self.n_actions) # shape = (b, n_s, n, n, 1)
 
         # remove agent i from the subcoalition map
         subcoalition_map_no_i = subcoalition_map - individual_map
@@ -90,19 +135,19 @@ class SQDDPGMixer(nn.Module):
                                                                  self.sample_size, 
                                                                  self.n_agents, 
                                                                  self.n_agents, 
-                                                                 1) # shape = (b, n_s, n, n, 1)
+                                                                 self.n_actions) # shape = (b, n_s, n, n, 1)
         individual_map = individual_map.unsqueeze(-1).expand(batch_size, 
                                                                  self.sample_size, 
                                                                  self.n_agents, 
                                                                  self.n_agents, 
-                                                                 1) # shape = (b, n_s, n, n, 1)
+                                                                 self.n_actions) # shape = (b, n_s, n, n, 1)
 
         # reshape actions for further process on coalitions
         reshape_agent_qs = agent_qs.unsqueeze(1).unsqueeze(2).expand(batch_size, 
                                                         self.sample_size, 
                                                         self.n_agents, 
                                                         self.n_agents, 
-                                                        1).gather(3, grand_coalitions) # shape = (b, n, 1) -> (b, 1, 1, n, 1) -> (b, n_s, n, n, 1)
+                                                        self.n_actions).gather(3, grand_coalitions) # shape = (b, n, 1) -> (b, 1, 1, n, 1) -> (b, n_s, n, n, 1)
 
         # get actions of its coalition memebers for each agent
         agent_qs_coalition_no_i = reshape_agent_qs * subcoalition_map_no_i # shape = (b, n_s, n, n, 1)
@@ -110,8 +155,9 @@ class SQDDPGMixer(nn.Module):
 
         # keep u_{-i} no gradient backprop
         agent_qs_coalition = agent_qs_coalition_no_i.detach() + agent_qs_coalition_i # shape = (b, n_s, n, n, 1)
+        # agent_qs_coalition = agent_qs_coalition_no_i + agent_qs_coalition_i # shape = (b, n_s, n, n, 1)
 
-        reshape_agent_qs_coalition = agent_qs_coalition.contiguous().view(-1, self.n_agents) # shape = (b*n_s*n, n)
+        reshape_agent_qs_coalition = agent_qs_coalition.contiguous().view(-1, self.n_agents*self.n_actions) # shape = (b*n_s*n, n)
         reshape_states = states.unsqueeze(1).unsqueeze(2).expand(batch_size, self.sample_size, self.n_agents, self.state_dim).contiguous().view(-1, self.state_dim) # shape = (b*n_s*n, s)
 
         # inputs = th.cat([reshape_agent_qs_coalition, reshape_states], dim=-1) # shape = (b*n_s*n, n+s)
@@ -126,7 +172,7 @@ class SQDDPGMixer(nn.Module):
     def forward(self, states, agent_qs):
         # agent_qs = (b, t, n)
         reshape_states = states.contiguous().view(-1, self.state_dim)
-        reshape_agent_qs = agent_qs.unsqueeze(-1).contiguous().view(-1, self.n_agents, 1)
+        reshape_agent_qs = agent_qs.unsqueeze(-1).contiguous().view(-1, self.n_agents, self.n_actions)
 
         shapley_values = self.get_shapley_values(reshape_states, reshape_agent_qs) # shape = (b*t, n)
         shapley_values = shapley_values.contiguous().view(states.size(0), states.size(1), self.n_agents) # shape = (b, t, n)

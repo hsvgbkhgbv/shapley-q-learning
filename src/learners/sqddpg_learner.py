@@ -63,8 +63,9 @@ class SQDDPGLearner:
 
         # actions for training critics
         policy_outs = F.softmax(mac_out[:, :-1], dim=-1)
-        chosen_action_qvals_agents = th.gather(policy_outs, dim=3, index=actions) 
-        chosen_action_qvals = chosen_action_qvals_agents # attention to the detach()
+        # chosen_action_qvals_agents = th.gather(policy_outs, dim=3, index=actions) 
+        # chosen_action_qvals = chosen_action_qvals_agents # attention to the detach()
+        chosen_action_qvals = policy_outs.detach()
 
         # for ddpg style policy training
         mac_out_clone = mac_out.clone()
@@ -78,8 +79,9 @@ class SQDDPGLearner:
         else:
             # greedy
             greedy_actions_distr = F.softmax(mac_out_clone[:, :-1], dim=-1)
-            greedy_actions_label = greedy_actions_distr.clone().detach().max(dim=-1, keepdim=True)[1]
-            actor_actions = th.gather(greedy_actions_distr, 3, greedy_actions_label)
+            # greedy_actions_label = greedy_actions_distr.clone().detach().max(dim=-1, keepdim=True)[1]
+            # actor_actions = th.gather(greedy_actions_distr, 3, greedy_actions_label)
+            actor_actions = greedy_actions_distr
         
         # Calculate the Q-Values necessary for the target
         target_mac_out = []
@@ -108,8 +110,9 @@ class SQDDPGLearner:
             else:
                 # greedy
                 target_actions_distr = F.softmax(target_mac_out_detach[:, 1:], dim=-1)
-                target_max_actions_label = target_actions_distr.clone().detach().max(dim=-1, keepdim=True)[1]
-                target_max_qvals = th.gather(target_actions_distr, 3, target_max_actions_label)
+                # target_max_actions_label = target_actions_distr.clone().detach().max(dim=-1, keepdim=True)[1]
+                # target_max_qvals = th.gather(target_actions_distr, 3, target_max_actions_label)
+                target_max_qvals = target_actions_distr.detach()
 
         # get shapley values
         shapley_values_sum = self.mixer(batch["state"][:, :-1], chosen_action_qvals.detach()).sum(dim=2, keepdim=True)
@@ -138,21 +141,6 @@ class SQDDPGLearner:
         # self.optimiser_mixer.zero_grad()
         # loss.backward()
 
-        # mac_grad_norm = th.nn.utils.clip_grad_norm_(self.mac_params, self.args.grad_norm_clip)
-
-        if (episode_num - self.last_actor_update_episode) / self.args.actor_update_interval >= 1.0:
-            self.optimiser_mac.zero_grad()
-            (self.args.actor_loss * actor_loss - self.args.logit_entropy * logit_entropy).backward()
-            mac_grad_norm = th.nn.utils.clip_grad_norm_(self.mac_params, self.args.grad_norm_clip)
-            self.optimiser_mac.step()
-            self.last_actor_update_episode = episode_num
-        else:
-            self.optimiser_mac.zero_grad()
-            (self.args.actor_loss * actor_loss - self.args.logit_entropy * logit_entropy).backward()
-            mac_grad_norm = th.nn.utils.clip_grad_norm_(self.mac_params, self.args.grad_norm_clip)
-            
-        # mixer_grad_norm = th.nn.utils.clip_grad_norm_(self.mixer_params, self.args.grad_norm_clip)
-
         if (episode_num - self.last_critic_update_episode) / self.args.critic_update_interval >= 1.0:
             self.optimiser_mixer.zero_grad()
             (self.args.shapley_loss * shapley_loss).backward()
@@ -164,6 +152,18 @@ class SQDDPGLearner:
             (self.args.shapley_loss * shapley_loss).backward()
             mixer_grad_norm = th.nn.utils.clip_grad_norm_(self.mixer_params, self.args.grad_norm_clip)
 
+        if (episode_num - self.last_actor_update_episode) / self.args.actor_update_interval >= 1.0:
+            self.optimiser_mac.zero_grad()
+            (self.args.actor_loss * actor_loss - self.args.logit_entropy * logit_entropy).backward()
+            mac_grad_norm = th.nn.utils.clip_grad_norm_(self.mac_params, self.args.grad_norm_clip)
+            self.optimiser_mac.step()
+            self.last_actor_update_episode = episode_num
+        else:
+            self.optimiser_mac.zero_grad()
+            (self.args.actor_loss * actor_loss - self.args.logit_entropy * logit_entropy).backward()
+            mac_grad_norm = th.nn.utils.clip_grad_norm_(self.mac_params, self.args.grad_norm_clip)
+
+
         if (episode_num - self.last_target_update_episode) / self.args.target_update_interval >= 1.0:
             self._update_targets()
             self.last_target_update_episode = episode_num
@@ -174,7 +174,7 @@ class SQDDPGLearner:
             self.logger.log_stat("mac_grad_norm", mac_grad_norm, t_env)
             self.logger.log_stat("mixer_grad_norm", mixer_grad_norm, t_env)
             mask_elems = mask.sum().item()
-            self.logger.log_stat("q_taken_mean", (chosen_action_qvals.squeeze(3) * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
+            # self.logger.log_stat("q_taken_mean", (chosen_action_qvals.squeeze(3) * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
             self.logger.log_stat("target_mean", (targets * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
             # self.logger.log_stat("central_loss", central_loss.item(), t_env)
             self.logger.log_stat("shapley_loss", shapley_loss.item(), t_env)
@@ -199,16 +199,12 @@ class SQDDPGLearner:
         if self.mixer is not None:
             self.mixer.cuda()
             self.target_mixer.cuda()
-        # if self.central_mac is not None:
-        #     self.central_mac.cuda()
-        #     self.target_central_mac.cuda()
-        # self.central_mixer.cuda()
-        # self.target_central_mixer.cuda()
 
     def save_models(self, path):
         self.mac.save_models(path)
         if self.mixer is not None:
             th.save(self.mixer.state_dict(), "{}/mixer.th".format(path))
+            th.save(self.target_mixer.state_dict(), "{}/target_mixer.th".format(path))
         th.save(self.optimiser_mac.state_dict(), "{}/opt_mac.th".format(path))
         th.save(self.optimiser_mixer.state_dict(), "{}/opt_mixer.th".format(path))
 
@@ -218,5 +214,6 @@ class SQDDPGLearner:
         self.target_mac.load_models(path)
         if self.mixer is not None:
             self.mixer.load_state_dict(th.load("{}/mixer.th".format(path), map_location=lambda storage, loc: storage))
+            self.target_mixer.load_state_dict(th.load("{}/target_mixer.th".format(path), map_location=lambda storage, loc: storage))
         self.optimiser_mac.load_state_dict(th.load("{}/opt_mac.th".format(path), map_location=lambda storage, loc: storage))
         self.optimiser_mixer.load_state_dict(th.load("{}/opt_mixer.th".format(path), map_location=lambda storage, loc: storage))
