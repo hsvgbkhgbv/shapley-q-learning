@@ -74,8 +74,9 @@ class SQDDPGLearner:
         if self.args.gumbel_softmax:
             # gumbel softmax
             gumbel_actions_distr = F.gumbel_softmax(mac_out_clone[:, :-1], hard=False, dim=-1, tau=self.args.policy_temp)
-            gumbel_actions_label = gumbel_actions_distr.clone().detach().max(dim=-1, keepdim=True)[1]
-            actor_actions = th.gather(gumbel_actions_distr, 3, gumbel_actions_label)
+            # gumbel_actions_label = gumbel_actions_distr.clone().detach().max(dim=-1, keepdim=True)[1]
+            # actor_actions = th.gather(gumbel_actions_distr, 3, gumbel_actions_label)
+            actor_actions = gumbel_actions_distr
         else:
             # greedy
             greedy_actions_distr = F.softmax(mac_out_clone[:, :-1], dim=-1)
@@ -105,8 +106,9 @@ class SQDDPGLearner:
             if self.args.gumbel_softmax:
                 # gumbel softmax
                 target_actions_distr = F.gumbel_softmax(target_mac_out_detach[:, 1:], hard=False, dim=-1, tau=self.args.policy_temp)
-                target_max_actions_label = target_actions_distr.clone().detach().max(dim=-1, keepdim=True)[1]
-                target_max_qvals = th.gather(target_actions_distr, 3, target_max_actions_label)
+                # target_max_actions_label = target_actions_distr.clone().detach().max(dim=-1, keepdim=True)[1]
+                # target_max_qvals = th.gather(target_actions_distr, 3, target_max_actions_label)
+                target_max_qvals = target_actions_distr.detach()
             else:
                 # greedy
                 target_actions_distr = F.softmax(target_mac_out_detach[:, 1:], dim=-1)
