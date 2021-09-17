@@ -98,7 +98,8 @@ class SQDDPGLearner:
         if self.args.double_q:
             raise Exception("No double q for DDPG")
         else:
-            target_mac_out_detach = mac_out.clone().detach()
+            # target_mac_out_detach = mac_out.clone().detach()
+            target_mac_out_detach = target_mac_out.clone().detach()
             target_mac_out_detach[avail_actions == 0] = -9999999
             # target_mac_out_detach = target_mac_out.clone().detach()
             # target_mac_out_detach[avail_actions == 0] = -9999999

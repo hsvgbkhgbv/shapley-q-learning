@@ -26,8 +26,6 @@ class QMixerCentralFF(nn.Module):
                                  non_lin(),
                                  nn.Linear(self.embed_dim, self.embed_dim),
                                  non_lin(),
-                                 nn.Linear(self.embed_dim, self.embed_dim),
-                                 non_lin(),
                                  nn.Linear(self.embed_dim, 1))
 
         # V(s) instead of a bias for the last layers
