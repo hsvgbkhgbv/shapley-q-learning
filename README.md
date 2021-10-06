@@ -1,6 +1,6 @@
-# SHAQ: Incorporating Shapley Value Theory into Q-Learning for Multi-Agent Reinforcement Learning
+# SHAQ: Incorporating Shapley Value Theory into Multi-Agent Q-Learning
 
-This is the implementation of the paper SHAQ: Incorporating Shapley Value Theory into Q-Learning for Multi-Agent Reinforcement Learning (https://arxiv.org/abs/2105.15013).
+This is the implementation of the paper SHAQ: Incorporating Shapley Value Theory into Multi-Agent Q-Learning (https://arxiv.org/abs/2105.15013).
 
 The implementation is based on PyMARL (https://github.com/oxwhirl/pymarl/). Please refer to that repo for more documentation.
 
