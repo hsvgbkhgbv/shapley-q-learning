@@ -4,7 +4,9 @@ This is the implementation of the paper SHAQ: Incorporating Shapley Value Theory
 
 The implementation is based on PyMARL (https://github.com/oxwhirl/pymarl/). Please refer to that repo for more documentation.
 
-The baselines used in this paper are from the repo of Weighted QMIX (https://github.com/oxwhirl/wqmix). To know more about baselines, please refer to that repo.
+The baselines except for SQDDPG used in this paper are from the repo of Weighted QMIX (https://github.com/oxwhirl/wqmix). To know more about baselines, please refer to that repo.
+
+SQDDPG is implemented based on https://github.com/hsvgbkhgbv/SQDDPG.
 
 The model implemented in this paper is based on Pytorch 1.4.0.
 
