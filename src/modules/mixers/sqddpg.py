@@ -74,7 +74,7 @@ class SQDDPGMixer(nn.Module):
         """
         E.g. batch_size = 2, n_agents = 3:
 
-        >>> grand_coalitions
+        >>> grand_coalitions_pos
         tensor([[2, 0, 1],
                 [1, 2, 0]])
 
@@ -97,14 +97,30 @@ class SQDDPGMixer(nn.Module):
                 [1., 0., 0.]]]])
         """
         seq_set = th.tril(th.ones(self.n_agents, self.n_agents).cuda(), diagonal=0, out=None)
-        grand_coalitions = th.multinomial(th.ones(batch_size*self.sample_size, 
+        grand_coalitions_pos = th.multinomial(th.ones(batch_size*self.sample_size, 
                                           self.n_agents).cuda()/self.n_agents, 
                                           self.n_agents, 
                                           replacement=False)
         individual_map = th.zeros(batch_size*self.sample_size*self.n_agents, self.n_agents).cuda()
-        individual_map.scatter_(1, grand_coalitions.contiguous().view(-1, 1), 1)
+        individual_map.scatter_(1, grand_coalitions_pos.contiguous().view(-1, 1), 1)
         individual_map = individual_map.contiguous().view(batch_size, self.sample_size, self.n_agents, self.n_agents)
         subcoalition_map = th.matmul(individual_map, seq_set)
+
+
+        # FIX: construct the grand coalition (in sequence by agent_idx) from the grand_coalitions_pos (e.g., pos_idx <- grand_coalitions_pos[agent_idx])
+        # grand_coalitions = []
+        # for grand_coalition_pos in grand_coalitions_pos:
+        #     grand_coalition = th.zeros_like(grand_coalition_pos)
+        #     for agent, pos in enumerate(grand_coalition_pos):
+        #         grand_coalition[pos] = agent
+        #     grand_coalitions.append(grand_coalition)
+        # grand_coalitions = th.stack(grand_coalitions, dim=0).to(self.device)
+        offset = (th.arange(batch_size*self.sample_size)*self.n_).reshape(-1, 1)
+        grand_coalitions_pos_alter = grand_coalitions_pos + offset
+        grand_coalitions = th.zeros_like(grand_coalitions_pos_alter.flatten())
+        grand_coalitions[grand_coalitions_pos_alter.flatten()] = th.arange(batch_size*self.sample_size*self.n_)
+        grand_coalitions = grand_coalitions.reshape(batch_size*self.sample_size, self.n_) - offset
+
         grand_coalitions = grand_coalitions.unsqueeze(1).expand(batch_size*self.sample_size, 
                                                                 self.n_agents, 
                                                                 self.n_agents).contiguous().view(batch_size, 
