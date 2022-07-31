@@ -53,7 +53,7 @@ If you use part of the work mentioned in this paper, please cite
 ```
 @misc{wang2021shaq,
       title={SHAQ: Incorporating Shapley Value Theory into Multi-Agent Q-Learning}, 
-      author={Jianhong Wang and Jinxin Wang and Yuan Zhang and Yunjie Gu and Tae-Kyun Kim},
+      author={Jianhong Wang and Yuan Zhang and Yunjie Gu and Tae-Kyun Kim},
       year={2021},
       eprint={2105.15013},
       archivePrefix={arXiv},
