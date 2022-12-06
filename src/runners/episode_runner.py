@@ -140,6 +140,11 @@ class EpisodeRunner:
 
             t += 1
 
+            try:
+                batch["terminated"][0][t]
+            except:
+                break
+            
         values = th.stack(values, 1)
         return values
 

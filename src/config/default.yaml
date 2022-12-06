@@ -57,6 +57,7 @@ epsilon_test: False # during training, PLEASE SET IT TO False
 save_batch_path: ""
 load_batch_path: ""
 save_values_path: ""
-
+save_actions_path: ""
+save_state_path: ""
 
 

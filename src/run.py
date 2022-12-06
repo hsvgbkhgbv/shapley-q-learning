@@ -164,6 +164,8 @@ def run_sequential(args, logger):
                 batch = th.load(args.load_batch_path)
                 values = runner.cal_values(batch) 
                 th.save(values, args.save_values_path)
+                th.save(batch["actions"], args.save_actions_path)
+                th.save(batch["state"], args.save_state_path)
             else:
                 evaluate_sequential(args, runner)
             return
