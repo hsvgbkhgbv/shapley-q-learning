@@ -48,6 +48,32 @@ As an example, to run the SHAQ on SMAC: 2c_vs_64zg with epsilon annealed over 50
 python3 src/main.py --config=shaq --env-config=sc2 with env_args.map_name=2c_vs_64zg alpha_lr=0.002 epsilon_anneal_time=50000
 ```
 
+## Visualizing the learned values
+We also provide the method to visualize the value during test. The details are as follows:
+1. Set the param `evaluate` as `True` and set an address for saving the testing result in string to `save_batch_path` in the `default.yaml`. 
+
+2. Set the checkpoint address to `checkpoint_path` that saves the model you would test in `default.yaml`.
+
+3. Set the trajectory during test saving address to `save_batch_path` in `default.yaml`.
+
+4. If you would like to test with the greedy policies, you need to set `epsilon_test` as `False`. Otherwise, you need to set `epsilon_test` as a float from `0` to `1.` to indicate the probability of performing random actions.
+
+5. Run the following example command:
+```shell
+    python3 src/main.py --config=shaq --env-config=pred_prey_punish with env_args.miscapture_punishment=-1 checkpoint_path=results/models/shaq__2022-07-31_11-31-44 evaluate=True epsilon_test=False save_batch_path=[...]
+```
+
+6. Remove the `save_batch_path` and set the trajectory saving path to `load_batch_path`.
+
+7. Set the paths for saving values, actions and state to `save_values_path`, `save_actions_path` and `save_state_path` respectively. These are saved in pickle files.
+
+8. Run the following example command:
+```shell
+    python3 src/main.py --config=shaq --env-config=pred_prey_punish with env_args.miscapture_punishment=-1 checkpoint_path=results/models/shaq__2022-07-31_11-31-44 evaluate=True epsilon_test=False load_batch_path=[...] save_values_path=[...] save_actions_path=[...] save_state_path=[...]
+```
+
+9. You can visualize and analyze the values, actions and states through the storage in the saved pickle files.
+
 ## Citing
 If you use part of the work mentioned in this paper, please cite
 ```
