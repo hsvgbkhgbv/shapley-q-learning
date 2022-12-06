@@ -49,7 +49,7 @@ python3 src/main.py --config=shaq --env-config=sc2 with env_args.map_name=2c_vs_
 ```
 
 ## Visualizing the learned values
-We also provide the method to visualize the value during test. The details are as follows:
+We also provide the method to visualize the learned values during test. The details are as follows:
 1. Set the param `evaluate` as `True` and set an address for saving the testing result in string to `save_batch_path` in the `default.yaml`. 
 
 2. Set the checkpoint address to `checkpoint_path` that saves the model you would test in `default.yaml`.
@@ -72,7 +72,7 @@ We also provide the method to visualize the value during test. The details are a
     python3 src/main.py --config=shaq --env-config=pred_prey_punish with env_args.miscapture_punishment=-1 checkpoint_path=results/models/shaq__2022-07-31_11-31-44 evaluate=True epsilon_test=False load_batch_path=[...] save_values_path=[...] save_actions_path=[...] save_state_path=[...]
 ```
 
-9. You can visualize and analyze the values, actions and states through the storage in the saved pickle files.
+9. You can visualize and analyze the learned values, actions and states through the storage in the saved pickle files.
 
 ## Citing
 If you use part of the work mentioned in this paper, please cite
