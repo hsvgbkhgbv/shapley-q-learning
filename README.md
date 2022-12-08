@@ -60,7 +60,7 @@ We also provide the method to visualize the learned values during test. The deta
 
 5. Run the following example command:
 ```shell
-    python3 src/main.py --config=shaq --env-config=pred_prey_punish with env_args.miscapture_punishment=-1 checkpoint_path=results/models/shaq__2022-07-31_11-31-44 evaluate=True epsilon_test=False save_batch_path=[...]
+python3 src/main.py --config=shaq --env-config=pred_prey_punish with env_args.miscapture_punishment=-1 checkpoint_path=results/models/shaq__2022-07-31_11-31-44 evaluate=True epsilon_test=False save_batch_path=[...]
 ```
 
 6. Remove the `save_batch_path` and set the trajectory saving path to `load_batch_path`.
@@ -69,7 +69,7 @@ We also provide the method to visualize the learned values during test. The deta
 
 8. Run the following example command:
 ```shell
-    python3 src/main.py --config=shaq --env-config=pred_prey_punish with env_args.miscapture_punishment=-1 checkpoint_path=results/models/shaq__2022-07-31_11-31-44 evaluate=True epsilon_test=False load_batch_path=[...] save_values_path=[...] save_actions_path=[...] save_state_path=[...]
+python3 src/main.py --config=shaq --env-config=pred_prey_punish with env_args.miscapture_punishment=-1 checkpoint_path=results/models/shaq__2022-07-31_11-31-44 evaluate=True epsilon_test=False load_batch_path=[...] save_values_path=[...] save_actions_path=[...] save_state_path=[...]
 ```
 
 9. You can visualize and analyze the learned values, actions and states through the storage in the saved pickle files.
