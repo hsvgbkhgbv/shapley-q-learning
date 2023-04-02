@@ -1,6 +1,6 @@
 # SHAQ: Incorporating Shapley Value Theory into Multi-Agent Q-Learning
 
-This is the implementation of the paper SHAQ: Incorporating Shapley Value Theory into Multi-Agent Q-Learning (https://arxiv.org/abs/2105.15013).
+This is the implementation of the paper SHAQ: Incorporating Shapley Value Theory into Multi-Agent Q-Learning (https://arxiv.org/abs/2105.15013), published on NeurIPS 2022.
 
 The implementation is based on PyMARL (https://github.com/oxwhirl/pymarl/). Please refer to that repo for more documentation.
 
@@ -77,14 +77,12 @@ python3 src/main.py --config=shaq --env-config=pred_prey_punish with env_args.mi
 ## Citing
 If you use part of the work mentioned in this paper, please cite
 ```
-@misc{https://doi.org/10.48550/arxiv.2105.15013,
-  doi = {10.48550/ARXIV.2105.15013},
-  url = {https://arxiv.org/abs/2105.15013},
-  author = {Wang, Jianhong and Zhang, Yuan and Gu, Yunjie and Kim, Tae-Kyun},
-  keywords = {Machine Learning (cs.LG), Artificial Intelligence (cs.AI), Multiagent Systems (cs.MA), FOS: Computer and information sciences, FOS: Computer and information sciences},
-  title = {SHAQ: Incorporating Shapley Value Theory into Multi-Agent Q-Learning},
-  publisher = {arXiv},
-  year = {2021},
-  copyright = {arXiv.org perpetual, non-exclusive license}
+@article{wang2022shaq,
+  title={SHAQ: Incorporating Shapley Value Theory into Multi-Agent Q-Learning},
+  author={Wang, Jianhong and Zhang, Yuan and Gu, Yunjie and Kim, Tae-Kyun},
+  journal={Advances in Neural Information Processing Systems},
+  volume={35},
+  pages={5941--5954},
+  year={2022}
 }
 ```
