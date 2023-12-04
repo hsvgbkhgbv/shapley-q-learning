@@ -1,3 +1,7 @@
+| :exclamation:  News |
+|:-----------------------------------------|
+|The Jax version of SHAQ has been implemented and merged into the novel MARL framework for Jax called [JaxMARL](https://github.com/FLAIROx/JaxMARL) following CleanRL's philosophy of providing single file implementations.|
+
 # SHAQ: Incorporating Shapley Value Theory into Multi-Agent Q-Learning
 
 This is the implementation of the paper [SHAQ: Incorporating Shapley Value Theory into Multi-Agent Q-Learning](https://arxiv.org/abs/2105.15013), published on NeurIPS 2022.
